@@ -1,0 +1,6 @@
+name: chromastudio
+description: ChromaStudio monorepo - spectral pigment mixing for fine artists
+version: 1.0.0
+
+environment:
+  sdk: '>=3.6.0 <4.0.0'

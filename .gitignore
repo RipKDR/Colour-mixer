@@ -1,0 +1,24 @@
+# ChromaStudio
+
+.dart_tool/
+.packages
+build/
+*.iml
+.idea/
+*.lock
+
+# Flutter
+apps/mobile/.dart_tool/
+apps/mobile/build/
+apps/mobile/.flutter-plugins
+apps/mobile/.flutter-plugins-dependencies
+
+# Rust
+packages/chroma_engine/target/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Flutter SDK (local install)
+flutter/
