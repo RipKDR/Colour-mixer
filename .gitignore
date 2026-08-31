@@ -20,5 +20,8 @@ packages/chroma_engine/target/
 .DS_Store
 Thumbs.db
 
+# Agent tools
+agent-tools/
+
 # Flutter SDK (local install)
 flutter/

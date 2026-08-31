@@ -6,13 +6,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme.dart';
 import '../../engine/mix_session.dart';
 import 'database.dart';
+import 'recipes_provider.dart';
 
 class RecipesScreen extends ConsumerWidget {
   const RecipesScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final db = ref.watch(databaseProvider);
+    final recipesAsync = ref.watch(recipesProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -25,13 +26,10 @@ class RecipesScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: FutureBuilder<List<MixRecipe>>(
-        future: db.getAllRecipes(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          final recipes = snapshot.data ?? [];
+      body: recipesAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, _) => Center(child: Text('Error: $e')),
+        data: (recipes) {
           if (recipes.isEmpty) {
             return Center(
               child: Column(
@@ -57,18 +55,14 @@ class RecipesScreen extends ConsumerWidget {
               return _RecipeCard(
                 recipe: recipe,
                 onDelete: () async {
-                  await db.deleteRecipe(recipe.id);
-                  if (context.mounted) {
-                    (context as Element).markNeedsBuild();
-                  }
+                  await ref.read(databaseProvider).deleteRecipe(recipe.id);
+                  refreshRecipes(ref);
                 },
                 onDuplicate: () async {
-                  await db.duplicateRecipe(recipe);
-                  if (context.mounted) {
-                    (context as Element).markNeedsBuild();
-                  }
+                  await ref.read(databaseProvider).duplicateRecipe(recipe);
+                  refreshRecipes(ref);
                 },
-                onLoad: () => _loadRecipe(ref, recipe),
+                onLoad: () => _loadRecipe(context, ref, recipe),
               );
             },
           );
@@ -114,17 +108,18 @@ class RecipesScreen extends ConsumerWidget {
         .map((e) => {'id': e.pigmentId, 'weight': e.weight})
         .toList());
 
-    final db = ref.read(databaseProvider);
-    await db.insertRecipe(
-      MixRecipesCompanion.insert(
-        name: nameController.text,
-        pigmentData: pigmentData,
-        labL: result.lab.l,
-        labA: result.lab.a,
-        labB: result.lab.b,
-        colorValue: _colorToInt(result.color),
-      ),
-    );
+    await ref.read(databaseProvider).insertRecipe(
+          MixRecipesCompanion.insert(
+            name: nameController.text,
+            pigmentData: pigmentData,
+            labL: result.lab.l,
+            labA: result.lab.a,
+            labB: result.lab.b,
+            colorValue: _colorToInt(result.color),
+          ),
+        );
+
+    refreshRecipes(ref);
 
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -133,8 +128,9 @@ class RecipesScreen extends ConsumerWidget {
     }
   }
 
-  void _loadRecipe(WidgetRef ref, MixRecipe recipe) {
-    final data = (jsonDecode(recipe.pigmentData) as List).cast<Map<String, dynamic>>();
+  void _loadRecipe(BuildContext context, WidgetRef ref, MixRecipe recipe) {
+    final data =
+        (jsonDecode(recipe.pigmentData) as List).cast<Map<String, dynamic>>();
     final entries = data
         .map((d) => MixEntry(
               pigmentId: d['id'] as String,
@@ -142,6 +138,12 @@ class RecipesScreen extends ConsumerWidget {
             ))
         .toList();
     ref.read(mixSessionProvider.notifier).setEntriesFromPalette(entries);
+
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Loaded "${recipe.name}"')),
+      );
+    }
   }
 }
 

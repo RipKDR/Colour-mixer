@@ -26,9 +26,16 @@ cargo test
 ```bash
 cd apps/mobile
 flutter pub get
-dart run build_runner build
-flutter run -d linux
+dart run build_runner build --delete-conflicting-outputs
+
+# Optional: build native Rust engine for Linux FFI
+../../tools/build_engine.sh
+
+# Run (Linux desktop)
+LD_LIBRARY_PATH=../../packages/chroma_engine/target/release flutter run -d linux
 ```
+
+Settings → Mixing engine shows **Rust (native FFI)** when the `.so` is loaded, otherwise **Dart**.
 
 ## Phase 1 Features
 

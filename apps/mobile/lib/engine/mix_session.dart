@@ -1,10 +1,9 @@
 import 'dart:async';
-import 'dart:convert';
 
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'chroma_engine.dart';
+import 'native_engine.dart';
 
 class MixEntry {
   MixEntry({required this.pigmentId, this.weight = 1.0});
@@ -62,19 +61,20 @@ class MixSessionState {
   }
 }
 
+final engineBackendProvider = FutureProvider<EngineBackend>((ref) async {
+  return createEngineBackend();
+});
+
+/// Exposes pigments from whichever backend is active.
 final engineProvider = FutureProvider<ChromaEngine>((ref) async {
-  final jsonStr =
-      await rootBundle.loadString('assets/pigments/all_pigments.json');
-  final list = (jsonDecode(jsonStr) as List).cast<Map<String, dynamic>>();
-  final pigments = {
-    for (final item in list) item['id'] as String: PigmentModel.fromJson(item),
-  };
+  final backend = await ref.watch(engineBackendProvider.future);
+  final pigments = {for (final p in backend.listPigments()) p.id: p};
   return ChromaEngine(pigments);
 });
 
 class MixSessionNotifier extends StateNotifier<MixSessionState> {
-  MixSessionNotifier(ChromaEngine engine)
-      : _engine = engine,
+  MixSessionNotifier(EngineBackend backend)
+      : _backend = backend,
         super(
           MixSessionState(
             entries: [
@@ -82,7 +82,7 @@ class MixSessionNotifier extends StateNotifier<MixSessionState> {
               MixEntry(pigmentId: 'hansa_yellow'),
             ],
             mode: MixMode.precision,
-            result: engine.mix([
+            result: backend.mix([
               const MixComponent(pigmentId: 'ultramarine_blue', weight: 1),
               const MixComponent(pigmentId: 'hansa_yellow', weight: 1),
             ]),
@@ -90,7 +90,7 @@ class MixSessionNotifier extends StateNotifier<MixSessionState> {
         );
 
   MixSessionNotifier._placeholder()
-      : _engine = null,
+      : _backend = null,
         super(
           const MixSessionState(
             entries: [],
@@ -100,7 +100,7 @@ class MixSessionNotifier extends StateNotifier<MixSessionState> {
           ),
         );
 
-  final ChromaEngine? _engine;
+  final EngineBackend? _backend;
   Timer? _debounce;
 
   void setMode(MixMode mode) => state = state.copyWith(mode: mode);
@@ -135,12 +135,11 @@ class MixSessionNotifier extends StateNotifier<MixSessionState> {
     if (weight < 0) weight = 0;
     final entries = [...state.entries];
     if (state.lockRatios && entries.isNotEmpty) {
-      final ratio = entries[index].weight /
-          entries.fold<double>(0, (s, e) => s + e.weight);
-      final newTotal = weight / (ratio == 0 ? 1 : ratio);
+      final total = entries.fold<double>(0, (s, e) => s + e.weight);
+      final ratio = total > 0 ? entries[index].weight / total : 0;
+      final newTotal = ratio == 0 ? weight : weight / ratio;
       for (var i = 0; i < entries.length; i++) {
-        final r = entries[i].weight /
-            entries.fold<double>(0, (s, e) => s + e.weight);
+        final r = total > 0 ? entries[i].weight / total : 0;
         entries[i].weight = newTotal * r;
       }
     } else {
@@ -161,12 +160,13 @@ class MixSessionNotifier extends StateNotifier<MixSessionState> {
   }
 
   void _recompute() {
-    if (_engine == null) return;
+    final backend = _backend;
+    if (backend == null) return;
     final components = state.entries
         .where((e) => e.weight > 0)
         .map((e) => MixComponent(pigmentId: e.pigmentId, weight: e.weight))
         .toList();
-    final result = _engine.mix(components);
+    final result = backend.mix(components);
     state = state.copyWith(result: result);
   }
 
@@ -179,9 +179,9 @@ class MixSessionNotifier extends StateNotifier<MixSessionState> {
 
 final mixSessionProvider =
     StateNotifierProvider<MixSessionNotifier, MixSessionState>((ref) {
-  final engineAsync = ref.watch(engineProvider);
-  return engineAsync.when(
-    data: (engine) => MixSessionNotifier(engine),
+  final backendAsync = ref.watch(engineBackendProvider);
+  return backendAsync.when(
+    data: (backend) => MixSessionNotifier(backend),
     loading: () => MixSessionNotifier._placeholder(),
     error: (_, __) => MixSessionNotifier._placeholder(),
   );

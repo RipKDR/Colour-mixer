@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/settings_provider.dart';
 import '../../core/theme.dart';
+import '../../engine/mix_session.dart';
+import '../../engine/native_engine.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -69,6 +71,22 @@ class SettingsScreen extends ConsumerWidget {
             enabled: false,
           ),
           const Divider(),
+          Consumer(
+            builder: (context, ref, _) {
+              final backend = ref.watch(engineBackendProvider);
+              final label = backend.when(
+                data: (b) =>
+                    b is NativeEngineBackend ? 'Rust (native FFI)' : 'Dart',
+                loading: () => 'Loading…',
+                error: (_, __) => 'Dart (fallback)',
+              );
+              return ListTile(
+                leading: const Icon(Icons.memory_outlined),
+                title: const Text('Mixing engine'),
+                subtitle: Text(label),
+              );
+            },
+          ),
           const ListTile(
             leading: Icon(Icons.info_outline),
             title: Text('ChromaStudio v1.0.0'),
