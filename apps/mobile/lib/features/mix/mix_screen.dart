@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import 'palette_mode.dart';
 import 'precision_mode.dart';
@@ -17,6 +18,11 @@ class MixScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Mix'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.photo_outlined),
+            tooltip: 'Painting preview',
+            onPressed: () => context.push('/preview'),
+          ),
           SegmentedButton<MixMode>(
             segments: const [
               ButtonSegment(

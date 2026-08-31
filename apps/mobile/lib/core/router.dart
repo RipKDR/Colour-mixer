@@ -3,7 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../features/canvas/canvas_screen.dart';
+import '../features/inventory/inventory_screen.dart';
+import '../features/learn/learn_screen.dart';
 import '../features/mix/mix_screen.dart';
+import '../features/preview/preview_screen.dart';
 import '../features/recipes/recipes_screen.dart';
 import '../features/settings/settings_screen.dart';
 
@@ -18,25 +21,29 @@ final routerProvider = Provider<GoRouter>((ref) {
         branches: [
           StatefulShellBranch(
             routes: [
-              GoRoute(
-                path: '/mix',
-                builder: (_, __) => const MixScreen(),
-              ),
+              GoRoute(path: '/mix', builder: (_, __) => const MixScreen()),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(path: '/canvas', builder: (_, __) => const CanvasScreen()),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(path: '/recipes', builder: (_, __) => const RecipesScreen()),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(path: '/learn', builder: (_, __) => const LearnScreen()),
             ],
           ),
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path: '/canvas',
-                builder: (_, __) => const CanvasScreen(),
-              ),
-            ],
-          ),
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/recipes',
-                builder: (_, __) => const RecipesScreen(),
+                path: '/inventory',
+                builder: (_, __) => const InventoryScreen(),
               ),
             ],
           ),
@@ -49,6 +56,10 @@ final routerProvider = Provider<GoRouter>((ref) {
             ],
           ),
         ],
+      ),
+      GoRoute(
+        path: '/preview',
+        builder: (_, __) => const PreviewScreen(),
       ),
     ],
   );
@@ -66,6 +77,7 @@ class _AppShell extends StatelessWidget {
       bottomNavigationBar: NavigationBar(
         selectedIndex: navigationShell.currentIndex,
         onDestinationSelected: navigationShell.goBranch,
+        labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
         destinations: const [
           NavigationDestination(
             icon: Icon(Icons.palette_outlined),
@@ -81,6 +93,16 @@ class _AppShell extends StatelessWidget {
             icon: Icon(Icons.bookmark_outline),
             selectedIcon: Icon(Icons.bookmark),
             label: 'Recipes',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.school_outlined),
+            selectedIcon: Icon(Icons.school),
+            label: 'Learn',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.inventory_2_outlined),
+            selectedIcon: Icon(Icons.inventory_2),
+            label: 'Stock',
           ),
           NavigationDestination(
             icon: Icon(Icons.settings_outlined),

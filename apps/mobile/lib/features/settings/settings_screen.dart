@@ -57,20 +57,7 @@ class SettingsScreen extends ConsumerWidget {
             value: false,
             onChanged: (_) {},
           ),
-          const _SectionHeader('Coming in Phase 2'),
-          const ListTile(
-            leading: Icon(Icons.school_outlined),
-            title: Text('Learn'),
-            subtitle: Text('Interactive colour theory lessons'),
-            enabled: false,
-          ),
-          const ListTile(
-            leading: Icon(Icons.inventory_2_outlined),
-            title: Text('Inventory'),
-            subtitle: Text('Track your paint tubes'),
-            enabled: false,
-          ),
-          const Divider(),
+          const _SectionHeader('About'),
           Consumer(
             builder: (context, ref, _) {
               final backend = ref.watch(engineBackendProvider);
@@ -92,10 +79,10 @@ class SettingsScreen extends ConsumerWidget {
             title: Text('ChromaStudio v1.0.0'),
             subtitle: Text('Spectral Kubelka-Munk mixing engine'),
           ),
-          ListTile(
+          const ListTile(
             leading: Icon(Icons.palette, color: AppTheme.ochre),
-            title: const Text('20 pigments loaded'),
-            subtitle: const Text('Offline • iOS & Android'),
+            title: Text('20 pigments loaded'),
+            subtitle: Text('Offline • iOS & Android'),
           ),
         ],
       ),
@@ -128,30 +115,6 @@ class _SectionHeader extends StatelessWidget {
               color: AppTheme.deepBlue,
               fontWeight: FontWeight.w600,
             ),
-      ),
-    );
-  }
-}
-
-class PlaceholderScreen extends StatelessWidget {
-  const PlaceholderScreen({super.key, required this.title, required this.icon});
-
-  final String title;
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(title)),
-      body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 64, color: AppTheme.ochre.withValues(alpha: 0.5)),
-            const SizedBox(height: 16),
-            Text('$title — Coming in Phase 2'),
-          ],
-        ),
       ),
     );
   }

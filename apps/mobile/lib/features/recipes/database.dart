@@ -12,7 +12,7 @@ class MixRecipes extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get name => text()();
   TextColumn get notes => text().withDefault(const Constant(''))();
-  TextColumn get pigmentData => text()(); // JSON array of {id, weight}
+  TextColumn get pigmentData => text()();
   RealColumn get labL => real()();
   RealColumn get labA => real()();
   RealColumn get labB => real()();
@@ -27,12 +27,48 @@ class RecipeTags extends Table {
   TextColumn get tag => text()();
 }
 
-@DriftDatabase(tables: [MixRecipes, RecipeTags])
+class InventoryItems extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get pigmentId => text()();
+  TextColumn get brand => text().withDefault(const Constant(''))();
+  TextColumn get line => text().withDefault(const Constant(''))();
+  TextColumn get customName => text().withDefault(const Constant(''))();
+  RealColumn get pricePerTube => real().withDefault(const Constant(0))();
+  RealColumn get tubeSizeMl => real().withDefault(const Constant(37))();
+  /// 0.0 = empty, 1.0 = full
+  RealColumn get amountLeft => real().withDefault(const Constant(1.0))();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+}
+
+class LessonProgress extends Table {
+  TextColumn get lessonId => text()();
+  BoolColumn get completed => boolean().withDefault(const Constant(false))();
+  RealColumn get bestDeltaE => real().nullable()();
+  IntColumn get attempts => integer().withDefault(const Constant(0))();
+
+  @override
+  Set<Column> get primaryKey => {lessonId};
+}
+
+@DriftDatabase(tables: [MixRecipes, RecipeTags, InventoryItems, LessonProgress])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+        onCreate: (m) async {
+          await m.createAll();
+        },
+        onUpgrade: (m, from, to) async {
+          if (from < 2) {
+            await m.createTable(inventoryItems);
+            await m.createTable(lessonProgress);
+          }
+        },
+      );
 
   Future<List<MixRecipe>> getAllRecipes() =>
       (select(mixRecipes)..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
@@ -58,6 +94,27 @@ class AppDatabase extends _$AppDatabase {
           colorValue: recipe.colorValue,
         ),
       );
+
+  Future<List<InventoryItem>> getAllInventory() =>
+      (select(inventoryItems)..orderBy([(t) => OrderingTerm.asc(t.customName)]))
+          .get();
+
+  Future<int> insertInventory(InventoryItemsCompanion item) =>
+      into(inventoryItems).insert(item);
+
+  Future<bool> updateInventory(InventoryItem item) =>
+      update(inventoryItems).replace(item);
+
+  Future<bool> deleteInventory(int id) => (delete(inventoryItems)
+        ..where((t) => t.id.equals(id)))
+      .go()
+      .then((c) => c > 0);
+
+  Future<List<LessonProgressData>> getAllLessonProgress() =>
+      select(lessonProgress).get();
+
+  Future<void> upsertLessonProgress(LessonProgressCompanion row) =>
+      into(lessonProgress).insertOnConflictUpdate(row);
 }
 
 LazyDatabase _openConnection() {

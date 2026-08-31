@@ -175,6 +175,19 @@ class Colorimetry {
     return xyzToSrgb(x, y, z);
   }
 
+  static (double, double, double) labToSrgb(double l, double a, double b) {
+    double f(double t) =>
+        t > 0.008856 ? math.pow(t, 1 / 3).toDouble() : (903.3 * t + 16) / 116;
+    const xn = 95.047, yn = 100.0, zn = 108.883;
+    final yv = (l + 16) / 116;
+    final xv = a / 500 + yv;
+    final zv = yv - b / 200;
+    final x = f(xv) * xn;
+    final y = f(yv) * yn;
+    final z = f(zv) * zn;
+    return xyzToSrgb(x, y, z);
+  }
+
   static Color srgbToColor((double, double, double) srgb) => Color.fromARGB(
         255,
         (srgb.$1 * 255).round(),
@@ -193,6 +206,85 @@ class Colorimetry {
       result.add(ksToReflectance(ks));
     }
     return result;
+  }
+
+  /// CIEDE2000 colour difference between two Lab colours.
+  static double ciede2000(LabColor a, LabColor b) {
+    return ciede2000Tuple((a.l, a.a, a.b), (b.l, b.a, b.b));
+  }
+
+  static double ciede2000Tuple((double, double, double) lab1, (double, double, double) lab2) {
+    final (l1, a1, b1) = lab1;
+    final (l2, a2, b2) = lab2;
+
+    final c1 = math.sqrt(a1 * a1 + b1 * b1);
+    final c2 = math.sqrt(a2 * a2 + b2 * b2);
+    final cBar = (c1 + c2) / 2;
+
+    final g = 0.5 *
+        (1 -
+            math.sqrt(
+                math.pow(cBar, 7) / (math.pow(cBar, 7) + math.pow(25, 7)),
+            ));
+
+    final a1p = a1 * (1 + g);
+    final a2p = a2 * (1 + g);
+    final c1p = math.sqrt(a1p * a1p + b1 * b1);
+    final c2p = math.sqrt(a2p * a2p + b2 * b2);
+
+    final h1p = math.atan2(b1, a1p) * 180 / math.pi % 360;
+    final h2p = math.atan2(b2, a2p) * 180 / math.pi % 360;
+
+    final dl = l2 - l1;
+    final dc = c2p - c1p;
+
+    double dh;
+    if (c1p * c2p < 1e-10) {
+      dh = 0;
+    } else if ((h2p - h1p).abs() <= 180) {
+      dh = h2p - h1p;
+    } else if (h2p <= h1p) {
+      dh = h2p - h1p + 360;
+    } else {
+      dh = h2p - h1p - 360;
+    }
+    dh = 2 * math.sqrt(c1p * c2p) * math.sin(dh * math.pi / 360);
+
+    final lBar = (l1 + l2) / 2;
+    final cBarp = (c1p + c2p) / 2;
+
+    double hBar;
+    if (c1p * c2p < 1e-10) {
+      hBar = h1p + h2p;
+    } else if ((h1p - h2p).abs() <= 180) {
+      hBar = (h1p + h2p) / 2;
+    } else if (h1p + h2p < 360) {
+      hBar = (h1p + h2p + 360) / 2;
+    } else {
+      hBar = (h1p + h2p - 360) / 2;
+    }
+
+    final t = 1 -
+        0.17 * math.cos((hBar - 30) * math.pi / 180) +
+        0.24 * math.cos(2 * hBar * math.pi / 180) +
+        0.32 * math.cos((3 * hBar + 6) * math.pi / 180) -
+        0.20 * math.cos((4 * hBar - 63) * math.pi / 180);
+
+    final sl = 1 + 0.015 * (lBar - 50) * (lBar - 50) / math.sqrt(20 + (lBar - 50) * (lBar - 50));
+    final sc = 1 + 0.045 * cBarp;
+    final sh = 1 + 0.015 * cBarp * t;
+
+    final rt = -2 *
+        math.sqrt(math.pow(cBarp, 7) / (math.pow(cBarp, 7) + math.pow(25, 7))) *
+        math.exp(-math.pow((hBar - 275) / 25, 2) * 60 * math.pi / 180) *
+        math.sin(2 * hBar * math.pi / 180);
+
+    final term1 = math.pow(dl / sl, 2);
+    final term2 = math.pow(dc / sc, 2);
+    final term3 = math.pow(dh / sh, 2);
+    final term4 = rt * (dc / sc) * (dh / sh);
+
+    return math.sqrt(term1 + term2 + term3 + term4);
   }
 }
 
