@@ -115,7 +115,8 @@ void main() {
           child: const MaterialApp(home: RecipesScreen()),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump();
 
       expect(find.byTooltip('Syncing…'), findsOneWidget);
       final button = tester.widget<IconButton>(find.byTooltip('Syncing…'));
