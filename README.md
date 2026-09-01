@@ -46,6 +46,19 @@ Settings → Mixing engine shows **Rust (native FFI)** when the `.so` is loaded,
 - Offline recipe save/load (SQLite via Drift)
 - Dark mode and accessibility semantics
 
+## Phase 2 Features
+
+- **Learn** — 3 interactive colour-mixing challenges with CIEDE2000 ΔE scoring
+- **Inventory** — Track paint tubes, amount left, and estimated value
+- **Painting Preview** — Import a photo and overlay your current mix (blend modes + opacity)
+- **Mediums** — Gel, glazing liquid, and flow improver with spectral dilution in Precision mode
+- **Drying preview** — Wet vs dry swatch comparison (binder + dry-time aware)
+- **Glaze simulator** — Layer translucent glazes over a base surface spectrally
+- **Brand catalog** — Browse Golden and Winsor & Newton paints; add to mix
+- **Recipe share** — Export recipe ratios and Lab values via system share sheet
+- **Cost warnings** — Inventory-based cost estimate and low-stock alerts on mix
+- Native Rust FFI on Linux (Settings shows active engine)
+
 ## License
 
 Proprietary - ChromaStudio v1.0

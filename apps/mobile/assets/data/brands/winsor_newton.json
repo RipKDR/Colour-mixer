@@ -1,0 +1,10 @@
+[
+  {"id": "wn_pro_ultramarine", "brand": "Winsor & Newton", "line": "Professional", "name": "Ultramarine Blue", "pigment_id": "ultramarine_blue", "pigment_codes": ["PB29"], "opacity": "transparent", "price_usd": 16.50, "size_ml": 37},
+  {"id": "wn_pro_cadmium_red", "brand": "Winsor & Newton", "line": "Professional", "name": "Cadmium Red", "pigment_id": "cadmium_red_light", "pigment_codes": ["PR108"], "opacity": "opaque", "price_usd": 28.90, "size_ml": 37},
+  {"id": "wn_pro_cadmium_yellow", "brand": "Winsor & Newton", "line": "Professional", "name": "Cadmium Yellow Pale", "pigment_id": "cadmium_yellow", "pigment_codes": ["PY35"], "opacity": "opaque", "price_usd": 26.50, "size_ml": 37},
+  {"id": "wn_pro_titanium_white", "brand": "Winsor & Newton", "line": "Professional", "name": "Titanium White", "pigment_id": "titanium_white", "pigment_codes": ["PW6"], "opacity": "opaque", "price_usd": 12.90, "size_ml": 37},
+  {"id": "wn_pro_alizarin", "brand": "Winsor & Newton", "line": "Professional", "name": "Alizarin Crimson", "pigment_id": "alizarin_crimson", "pigment_codes": ["PR83"], "opacity": "transparent", "price_usd": 14.20, "size_ml": 37},
+  {"id": "wn_winton_ochre", "brand": "Winsor & Newton", "line": "Winton", "name": "Yellow Ochre", "pigment_id": "yellow_ochre", "pigment_codes": ["PY43"], "opacity": "semi-opaque", "price_usd": 6.90, "size_ml": 37},
+  {"id": "wn_pro_viridian", "brand": "Winsor & Newton", "line": "Professional", "name": "Viridian", "pigment_id": "viridian", "pigment_codes": ["PG18"], "opacity": "transparent", "price_usd": 18.40, "size_ml": 37},
+  {"id": "wn_pro_paynes_gray", "brand": "Winsor & Newton", "line": "Professional", "name": "Payne's Gray", "pigment_id": "paynes_gray", "pigment_codes": ["PBk7", "PB29"], "opacity": "semi-transparent", "price_usd": 13.80, "size_ml": 37}
+]

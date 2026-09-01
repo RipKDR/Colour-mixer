@@ -3,7 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme.dart';
+import '../../engine/catalog.dart';
 import '../../engine/chroma_engine.dart';
+import '../../engine/mediums.dart';
+import '../../engine/mix_cost.dart';
 import '../../engine/mix_session.dart';
 
 class PrecisionModeScreen extends ConsumerWidget {
@@ -19,22 +22,68 @@ class PrecisionModeScreen extends ConsumerWidget {
         final session = ref.watch(mixSessionProvider);
         final notifier = ref.read(mixSessionProvider.notifier);
         final result = session.result;
-        final displayColor = session.showUndertone
-            ? result?.undertone ?? Colors.grey
-            : result?.color ?? Colors.grey;
+        final cost = ref.watch(mixCostProvider);
+
+        Color displayColor;
+        if (session.showUndertone) {
+          displayColor = result?.undertone ?? Colors.grey;
+        } else if (session.showDryingPreview && result != null) {
+          final mod = session.mediumId != null
+              ? (ref.watch(mediumLibraryProvider).valueOrNull
+                      ?.get(session.mediumId!)
+                      ?.dryingModifier ??
+                  0.0)
+              : 0.0;
+          displayColor = DryingSimulator.driedColor(
+            result.reflectance,
+            session.binder,
+            session.dryingTime,
+            mediumModifier: mod,
+          );
+        } else {
+          displayColor = result?.color ?? Colors.grey;
+        }
 
         return Column(
           children: [
+            if (cost.warnings.isNotEmpty)
+              MaterialBanner(
+                content: Text(cost.warnings.join(' · ')),
+                leading: const Icon(Icons.warning_amber),
+                backgroundColor: Colors.orange.shade50,
+                actions: [
+                  TextButton(
+                    onPressed: () {},
+                    child: Text(
+                      cost.totalCost > 0
+                          ? 'Est. \$${cost.totalCost.toStringAsFixed(2)}'
+                          : 'View stock',
+                    ),
+                  ),
+                ],
+              ),
             Expanded(
               flex: 2,
               child: _SwatchPanel(
                 color: displayColor,
+                wetColor: result?.color,
                 lab: result?.lab,
                 background: session.swatchBackground,
                 showUndertone: session.showUndertone,
+                showDrying: session.showDryingPreview,
                 onBackgroundChanged: notifier.setSwatchBackground,
                 onToggleUndertone: notifier.toggleUndertone,
+                onToggleDrying: notifier.toggleDryingPreview,
               ),
+            ),
+            _MediumSection(
+              mediumId: session.mediumId,
+              mediumAmount: session.mediumAmount,
+              dryingTime: session.dryingTime,
+              binder: session.binder,
+              onMediumChanged: notifier.setMedium,
+              onDryingTimeChanged: notifier.setDryingTime,
+              onBinderChanged: notifier.setBinder,
             ),
             Expanded(
               flex: 3,
@@ -109,19 +158,25 @@ class PrecisionModeScreen extends ConsumerWidget {
 class _SwatchPanel extends StatelessWidget {
   const _SwatchPanel({
     required this.color,
-    required this.lab,
     required this.background,
     required this.showUndertone,
     required this.onBackgroundChanged,
     required this.onToggleUndertone,
+    this.wetColor,
+    this.lab,
+    this.showDrying = false,
+    this.onToggleDrying,
   });
 
   final Color color;
+  final Color? wetColor;
   final LabColor? lab;
   final SwatchBackground background;
   final bool showUndertone;
+  final bool showDrying;
   final ValueChanged<SwatchBackground> onBackgroundChanged;
   final VoidCallback onToggleUndertone;
+  final VoidCallback? onToggleDrying;
 
   Color get _bgColor {
     switch (background) {
@@ -157,21 +212,21 @@ class _SwatchPanel extends StatelessWidget {
                   border: Border.all(color: AppTheme.ochre.withValues(alpha: 0.5)),
                 ),
                 child: Center(
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    width: 120,
-                    height: 120,
-                    decoration: BoxDecoration(
-                      color: color,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: color.withValues(alpha: 0.4),
-                          blurRadius: 20,
-                          spreadRadius: 2,
-                        ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (showDrying && wetColor != null) ...[
+                        _MiniSwatch(color: wetColor!, label: 'Wet'),
+                        const SizedBox(width: 16),
+                        const Icon(Icons.arrow_forward, size: 16),
+                        const SizedBox(width: 16),
                       ],
-                    ),
+                      _MiniSwatch(
+                        color: color,
+                        label: showDrying ? 'Dry' : (showUndertone ? 'Undertone' : 'Mix'),
+                        large: !showDrying,
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -196,7 +251,162 @@ class _SwatchPanel extends StatelessWidget {
             icon: Icon(showUndertone ? Icons.layers : Icons.circle),
             label: Text(showUndertone ? 'Undertone' : 'Mass tone'),
           ),
+          if (onToggleDrying != null)
+            TextButton.icon(
+              onPressed: onToggleDrying,
+              icon: Icon(showDrying ? Icons.wb_sunny : Icons.water_drop),
+              label: Text(showDrying ? 'Drying preview' : 'Wet only'),
+            ),
         ],
+      ),
+    );
+  }
+}
+
+class _MiniSwatch extends StatelessWidget {
+  const _MiniSwatch({
+    required this.color,
+    required this.label,
+    this.large = false,
+  });
+
+  final Color color;
+  final String label;
+  final bool large;
+
+  @override
+  Widget build(BuildContext context) {
+    final size = large ? 120.0 : 64.0;
+    return Column(
+      children: [
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: color.withValues(alpha: 0.4),
+                blurRadius: 12,
+                spreadRadius: 1,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(label, style: Theme.of(context).textTheme.labelSmall),
+      ],
+    );
+  }
+}
+
+class _MediumSection extends ConsumerWidget {
+  const _MediumSection({
+    required this.mediumId,
+    required this.mediumAmount,
+    required this.dryingTime,
+    required this.binder,
+    required this.onMediumChanged,
+    required this.onDryingTimeChanged,
+    required this.onBinderChanged,
+  });
+
+  final String? mediumId;
+  final double mediumAmount;
+  final DryingTime dryingTime;
+  final String binder;
+  final void Function(String?, double) onMediumChanged;
+  final ValueChanged<DryingTime> onDryingTimeChanged;
+  final ValueChanged<String> onBinderChanged;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final mediumsAsync = ref.watch(mediumLibraryProvider);
+
+    return mediumsAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (lib) => Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Medium', style: Theme.of(context).textTheme.titleSmall),
+            DropdownButtonFormField<String?>(
+              value: mediumId,
+              decoration: const InputDecoration(
+                hintText: 'No medium',
+                isDense: true,
+              ),
+              items: [
+                const DropdownMenuItem(value: null, child: Text('None')),
+                ...lib.all.map(
+                  (m) => DropdownMenuItem(value: m.id, child: Text(m.name)),
+                ),
+              ],
+              onChanged: (id) => onMediumChanged(id, mediumAmount),
+            ),
+            if (mediumId != null) ...[
+              Slider(
+                value: mediumAmount.clamp(0, 10),
+                min: 0,
+                max: 10,
+                label: mediumAmount.toStringAsFixed(1),
+                onChanged: (v) => onMediumChanged(mediumId, v),
+              ),
+            ],
+            Row(
+              children: [
+                Expanded(
+                  child: DropdownButtonFormField<String>(
+                    value: binder,
+                    decoration: const InputDecoration(
+                      labelText: 'Binder',
+                      isDense: true,
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: 'acrylic', child: Text('Acrylic')),
+                      DropdownMenuItem(value: 'oil', child: Text('Oil')),
+                    ],
+                    onChanged: (v) {
+                      if (v != null) onBinderChanged(v);
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: DropdownButtonFormField<DryingTime>(
+                    value: dryingTime,
+                    decoration: const InputDecoration(
+                      labelText: 'Dry time',
+                      isDense: true,
+                    ),
+                    items: const [
+                      DropdownMenuItem(
+                        value: DryingTime.oneDay,
+                        child: Text('1 day'),
+                      ),
+                      DropdownMenuItem(
+                        value: DryingTime.oneWeek,
+                        child: Text('1 week'),
+                      ),
+                      DropdownMenuItem(
+                        value: DryingTime.oneMonth,
+                        child: Text('1 month'),
+                      ),
+                    ],
+                    onChanged: (v) {
+                      if (v != null) onDryingTimeChanged(v);
+                    },
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
       ),
     );
   }

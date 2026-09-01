@@ -19,6 +19,16 @@ class MixScreen extends ConsumerWidget {
         title: const Text('Mix'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.layers_outlined),
+            tooltip: 'Glaze simulator',
+            onPressed: () => context.push('/glaze'),
+          ),
+          IconButton(
+            icon: const Icon(Icons.store_outlined),
+            tooltip: 'Brand catalog',
+            onPressed: () => context.push('/catalog'),
+          ),
+          IconButton(
             icon: const Icon(Icons.photo_outlined),
             tooltip: 'Painting preview',
             onPressed: () => context.push('/preview'),

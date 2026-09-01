@@ -196,11 +196,13 @@ class NativeEngineBackend implements EngineBackend {
   @override
   MixResult mix(List<MixComponent> components) {
     if (components.isEmpty) {
-      return const MixResult(
-        lab: LabColor(50, 0, 0),
-        color: Color(0xFF808080),
-        massTone: Color(0xFF808080),
-        undertone: Color(0xFF808080),
+      final empty = List<double>.filled(Colorimetry.spectrumSamples, 0.5);
+      return MixResult(
+        lab: const LabColor(50, 0, 0),
+        color: const Color(0xFF808080),
+        massTone: const Color(0xFF808080),
+        undertone: const Color(0xFF808080),
+        reflectance: empty,
       );
     }
 
@@ -218,11 +220,13 @@ class NativeEngineBackend implements EngineBackend {
         throw StateError('Native mix failed');
       }
       final r = out.ref;
+      final empty = List<double>.filled(Colorimetry.spectrumSamples, 0.5);
       return MixResult(
         lab: LabColor(r.labL, r.labA, r.labB),
         color: _toColor(r.srgbR, r.srgbG, r.srgbB),
         massTone: _toColor(r.massR, r.massG, r.massB),
         undertone: _toColor(r.undertoneR, r.undertoneG, r.undertoneB),
+        reflectance: empty,
       );
     } finally {
       for (var i = 0; i < count; i++) {

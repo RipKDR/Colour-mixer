@@ -1,0 +1,10 @@
+[
+  {"id": "golden_hb_ultramarine", "brand": "Golden", "line": "Heavy Body", "name": "Ultramarine Blue", "pigment_id": "ultramarine_blue", "pigment_codes": ["PB29"], "opacity": "semi-transparent", "price_usd": 14.99, "size_ml": 59},
+  {"id": "golden_hb_cadmium_red", "brand": "Golden", "line": "Heavy Body", "name": "Cadmium Red Light", "pigment_id": "cadmium_red_light", "pigment_codes": ["PR108"], "opacity": "opaque", "price_usd": 22.99, "size_ml": 59},
+  {"id": "golden_hb_hansa_yellow", "brand": "Golden", "line": "Heavy Body", "name": "Hansa Yellow Opaque", "pigment_id": "hansa_yellow", "pigment_codes": ["PY74"], "opacity": "opaque", "price_usd": 13.49, "size_ml": 59},
+  {"id": "golden_hb_titanium_white", "brand": "Golden", "line": "Heavy Body", "name": "Titanium White", "pigment_id": "titanium_white", "pigment_codes": ["PW6"], "opacity": "opaque", "price_usd": 12.99, "size_ml": 59},
+  {"id": "golden_hb_phthalo_green", "brand": "Golden", "line": "Heavy Body", "name": "Phthalo Green", "pigment_id": "phthalo_green", "pigment_codes": ["PG7"], "opacity": "transparent", "price_usd": 13.99, "size_ml": 59},
+  {"id": "golden_fluid_quin_magenta", "brand": "Golden", "line": "Fluid", "name": "Quinacridone Magenta", "pigment_id": "quinacridone_magenta", "pigment_codes": ["PR122"], "opacity": "transparent", "price_usd": 15.49, "size_ml": 30},
+  {"id": "golden_open_burnt_sienna", "brand": "Golden", "line": "Open", "name": "Burnt Sienna", "pigment_id": "burnt_sienna", "pigment_codes": ["PBr7"], "opacity": "semi-transparent", "price_usd": 14.49, "size_ml": 59},
+  {"id": "golden_hb_burnt_umber", "brand": "Golden", "line": "Heavy Body", "name": "Burnt Umber", "pigment_id": "burnt_umber", "pigment_codes": ["PBr7"], "opacity": "semi-transparent", "price_usd": 12.49, "size_ml": 59}
+]

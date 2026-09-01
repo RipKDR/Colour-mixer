@@ -1,0 +1,62 @@
+[
+  {
+    "id": "linseed_oil",
+    "name": "Linseed Oil",
+    "binder": "oil",
+    "translucency_boost": 0.15,
+    "gloss_level": 0.7,
+    "viscosity": 0.3,
+    "drying_modifier": 0.1,
+    "description": "Traditional oil medium; increases flow and gloss, slows drying."
+  },
+  {
+    "id": "stand_oil",
+    "name": "Stand Oil",
+    "binder": "oil",
+    "translucency_boost": 0.2,
+    "gloss_level": 0.85,
+    "viscosity": 0.7,
+    "drying_modifier": -0.2,
+    "description": "Thickened linseed oil; enamel-like finish, very slow drying."
+  },
+  {
+    "id": "glazing_liquid",
+    "name": "Glazing Liquid",
+    "binder": "acrylic",
+    "translucency_boost": 0.35,
+    "gloss_level": 0.6,
+    "viscosity": 0.2,
+    "drying_modifier": 0.0,
+    "description": "Extends drying time and transparency for acrylic glazes."
+  },
+  {
+    "id": "gel_medium_gloss",
+    "name": "Gel Medium (Gloss)",
+    "binder": "acrylic",
+    "translucency_boost": 0.1,
+    "gloss_level": 0.9,
+    "viscosity": 0.9,
+    "drying_modifier": 0.0,
+    "description": "Builds texture and body while maintaining gloss."
+  },
+  {
+    "id": "matte_medium",
+    "name": "Matte Medium",
+    "binder": "acrylic",
+    "translucency_boost": 0.12,
+    "gloss_level": 0.1,
+    "viscosity": 0.4,
+    "drying_modifier": 0.0,
+    "description": "Reduces gloss for a flat, matte paint film."
+  },
+  {
+    "id": "water",
+    "name": "Water",
+    "binder": "acrylic",
+    "translucency_boost": 0.25,
+    "gloss_level": 0.15,
+    "viscosity": 0.05,
+    "drying_modifier": 0.15,
+    "description": "Thins acrylics; increases transparency, reduces adhesion if over-thinned."
+  }
+]

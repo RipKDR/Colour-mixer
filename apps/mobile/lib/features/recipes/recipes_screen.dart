@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../core/theme.dart';
 import '../../engine/mix_session.dart';
@@ -63,6 +64,7 @@ class RecipesScreen extends ConsumerWidget {
                   refreshRecipes(ref);
                 },
                 onLoad: () => _loadRecipe(context, ref, recipe),
+                onShare: () => _shareRecipe(recipe),
               );
             },
           );
@@ -145,6 +147,25 @@ class RecipesScreen extends ConsumerWidget {
       );
     }
   }
+
+  Future<void> _shareRecipe(MixRecipe recipe) async {
+    final pigments =
+        (jsonDecode(recipe.pigmentData) as List).cast<Map<String, dynamic>>();
+    final lines = <String>[
+      'ChromaStudio Recipe: ${recipe.name}',
+      '',
+      'Pigments:',
+      for (final p in pigments)
+        '  • ${p['id']}: ${(p['weight'] as num).toStringAsFixed(2)} parts',
+      '',
+      'Lab: L=${recipe.labL.toStringAsFixed(1)} '
+      'a=${recipe.labA.toStringAsFixed(1)} '
+      'b=${recipe.labB.toStringAsFixed(1)}',
+      if (recipe.notes.isNotEmpty) '',
+      if (recipe.notes.isNotEmpty) 'Notes: ${recipe.notes}',
+    ];
+    await Share.share(lines.join('\n'), subject: recipe.name);
+  }
 }
 
 int _colorToInt(Color color) {
@@ -161,12 +182,14 @@ class _RecipeCard extends StatelessWidget {
     required this.onDelete,
     required this.onDuplicate,
     required this.onLoad,
+    required this.onShare,
   });
 
   final MixRecipe recipe;
   final VoidCallback onDelete;
   final VoidCallback onDuplicate;
   final VoidCallback onLoad;
+  final VoidCallback onShare;
 
   @override
   Widget build(BuildContext context) {
@@ -187,6 +210,8 @@ class _RecipeCard extends StatelessWidget {
         trailing: PopupMenuButton<String>(
           onSelected: (v) {
             switch (v) {
+              case 'share':
+                onShare();
               case 'duplicate':
                 onDuplicate();
               case 'delete':
@@ -194,6 +219,7 @@ class _RecipeCard extends StatelessWidget {
             }
           },
           itemBuilder: (_) => const [
+            PopupMenuItem(value: 'share', child: Text('Share')),
             PopupMenuItem(value: 'duplicate', child: Text('Duplicate')),
             PopupMenuItem(value: 'delete', child: Text('Delete')),
           ],

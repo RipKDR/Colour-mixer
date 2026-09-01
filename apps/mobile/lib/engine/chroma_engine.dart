@@ -69,12 +69,18 @@ class MixResult {
     required this.color,
     required this.massTone,
     required this.undertone,
+    required this.reflectance,
+    this.glossLevel = 0.3,
+    this.mediumName,
   });
 
   final LabColor lab;
   final Color color;
   final Color massTone;
   final Color undertone;
+  final List<double> reflectance;
+  final double glossLevel;
+  final String? mediumName;
 }
 
 class Colorimetry {
@@ -300,21 +306,25 @@ class ChromaEngine {
 
   MixResult mix(List<MixComponent> components) {
     if (components.isEmpty) {
+      final empty = List<double>.filled(Colorimetry.spectrumSamples, 0.5);
       return MixResult(
         lab: const LabColor(50, 0, 0),
         color: const Color(0xFF808080),
         massTone: const Color(0xFF808080),
         undertone: const Color(0xFF808080),
+        reflectance: empty,
       );
     }
 
     final total = components.fold<double>(0, (s, c) => s + c.weight);
     if (total <= 0) {
+      final empty = List<double>.filled(Colorimetry.spectrumSamples, 0.5);
       return MixResult(
         lab: const LabColor(50, 0, 0),
         color: const Color(0xFF808080),
         massTone: const Color(0xFF808080),
         undertone: const Color(0xFF808080),
+        reflectance: empty,
       );
     }
 
@@ -349,6 +359,7 @@ class ChromaEngine {
       color: massTone,
       massTone: massTone,
       undertone: undertone,
+      reflectance: reflectance,
     );
   }
 }

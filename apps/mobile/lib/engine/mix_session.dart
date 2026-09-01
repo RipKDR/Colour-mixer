@@ -2,7 +2,9 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'catalog.dart';
 import 'chroma_engine.dart';
+import 'mediums.dart';
 import 'native_engine.dart';
 
 class MixEntry {
@@ -21,9 +23,14 @@ class MixSessionState {
     required this.mode,
     required this.result,
     this.showUndertone = false,
+    this.showDryingPreview = false,
     this.lockRatios = false,
     this.swatchBackground = SwatchBackground.white,
     this.quantityUnit = QuantityUnit.parts,
+    this.mediumId,
+    this.mediumAmount = 0,
+    this.dryingTime = DryingTime.oneWeek,
+    this.binder = 'acrylic',
     this.isLoading = false,
   });
 
@@ -31,9 +38,14 @@ class MixSessionState {
   final MixMode mode;
   final MixResult? result;
   final bool showUndertone;
+  final bool showDryingPreview;
   final bool lockRatios;
   final SwatchBackground swatchBackground;
   final QuantityUnit quantityUnit;
+  final String? mediumId;
+  final double mediumAmount;
+  final DryingTime dryingTime;
+  final String binder;
   final bool isLoading;
 
   List<double> get weights => entries.map((e) => e.weight).toList();
@@ -43,19 +55,30 @@ class MixSessionState {
     MixMode? mode,
     MixResult? result,
     bool? showUndertone,
+    bool? showDryingPreview,
     bool? lockRatios,
     SwatchBackground? swatchBackground,
     QuantityUnit? quantityUnit,
+    String? mediumId,
+    double? mediumAmount,
+    DryingTime? dryingTime,
+    String? binder,
     bool? isLoading,
+    bool clearMedium = false,
   }) {
     return MixSessionState(
       entries: entries ?? this.entries,
       mode: mode ?? this.mode,
       result: result ?? this.result,
       showUndertone: showUndertone ?? this.showUndertone,
+      showDryingPreview: showDryingPreview ?? this.showDryingPreview,
       lockRatios: lockRatios ?? this.lockRatios,
       swatchBackground: swatchBackground ?? this.swatchBackground,
       quantityUnit: quantityUnit ?? this.quantityUnit,
+      mediumId: clearMedium ? null : (mediumId ?? this.mediumId),
+      mediumAmount: mediumAmount ?? this.mediumAmount,
+      dryingTime: dryingTime ?? this.dryingTime,
+      binder: binder ?? this.binder,
       isLoading: isLoading ?? this.isLoading,
     );
   }
@@ -65,7 +88,6 @@ final engineBackendProvider = FutureProvider<EngineBackend>((ref) async {
   return createEngineBackend();
 });
 
-/// Exposes pigments from whichever backend is active.
 final engineProvider = FutureProvider<ChromaEngine>((ref) async {
   final backend = await ref.watch(engineBackendProvider.future);
   final pigments = {for (final p in backend.listPigments()) p.id: p};
@@ -73,8 +95,9 @@ final engineProvider = FutureProvider<ChromaEngine>((ref) async {
 });
 
 class MixSessionNotifier extends StateNotifier<MixSessionState> {
-  MixSessionNotifier(EngineBackend backend)
+  MixSessionNotifier(EngineBackend backend, MediumLibrary? mediums)
       : _backend = backend,
+        _mediums = mediums,
         super(
           MixSessionState(
             entries: [
@@ -82,15 +105,22 @@ class MixSessionNotifier extends StateNotifier<MixSessionState> {
               MixEntry(pigmentId: 'hansa_yellow'),
             ],
             mode: MixMode.precision,
-            result: backend.mix([
-              const MixComponent(pigmentId: 'ultramarine_blue', weight: 1),
-              const MixComponent(pigmentId: 'hansa_yellow', weight: 1),
-            ]),
+            result: _computeMix(
+              backend,
+              mediums,
+              [
+                const MixComponent(pigmentId: 'ultramarine_blue', weight: 1),
+                const MixComponent(pigmentId: 'hansa_yellow', weight: 1),
+              ],
+              null,
+              0,
+            ),
           ),
         );
 
   MixSessionNotifier._placeholder()
       : _backend = null,
+        _mediums = null,
         super(
           const MixSessionState(
             entries: [],
@@ -101,12 +131,33 @@ class MixSessionNotifier extends StateNotifier<MixSessionState> {
         );
 
   final EngineBackend? _backend;
+  final MediumLibrary? _mediums;
   Timer? _debounce;
+
+  static MixResult _computeMix(
+    EngineBackend backend,
+    MediumLibrary? mediums,
+    List<MixComponent> components,
+    String? mediumId,
+    double mediumAmount,
+  ) {
+    var result = backend.mix(components);
+    if (mediumId != null && mediums != null && mediumAmount > 0) {
+      final medium = mediums.get(mediumId);
+      if (medium != null) {
+        result = applyMedium(result, medium, mediumAmount);
+      }
+    }
+    return result;
+  }
 
   void setMode(MixMode mode) => state = state.copyWith(mode: mode);
 
   void toggleUndertone() =>
       state = state.copyWith(showUndertone: !state.showUndertone);
+
+  void toggleDryingPreview() =>
+      state = state.copyWith(showDryingPreview: !state.showDryingPreview);
 
   void toggleLockRatios() =>
       state = state.copyWith(lockRatios: !state.lockRatios);
@@ -116,6 +167,20 @@ class MixSessionNotifier extends StateNotifier<MixSessionState> {
 
   void setQuantityUnit(QuantityUnit unit) =>
       state = state.copyWith(quantityUnit: unit);
+
+  void setMedium(String? id, double amount) {
+    state = state.copyWith(
+      mediumId: id,
+      mediumAmount: amount,
+      clearMedium: id == null,
+    );
+    _scheduleMix();
+  }
+
+  void setDryingTime(DryingTime time) =>
+      state = state.copyWith(dryingTime: time);
+
+  void setBinder(String binder) => state = state.copyWith(binder: binder);
 
   void addPigment(String pigmentId) {
     if (state.entries.any((e) => e.pigmentId == pigmentId)) return;
@@ -166,7 +231,13 @@ class MixSessionNotifier extends StateNotifier<MixSessionState> {
         .where((e) => e.weight > 0)
         .map((e) => MixComponent(pigmentId: e.pigmentId, weight: e.weight))
         .toList();
-    final result = backend.mix(components);
+    final result = _computeMix(
+      backend,
+      _mediums,
+      components,
+      state.mediumId,
+      state.mediumAmount,
+    );
     state = state.copyWith(result: result);
   }
 
@@ -180,8 +251,12 @@ class MixSessionNotifier extends StateNotifier<MixSessionState> {
 final mixSessionProvider =
     StateNotifierProvider<MixSessionNotifier, MixSessionState>((ref) {
   final backendAsync = ref.watch(engineBackendProvider);
+  final mediumsAsync = ref.watch(mediumLibraryProvider);
   return backendAsync.when(
-    data: (backend) => MixSessionNotifier(backend),
+    data: (backend) => MixSessionNotifier(
+      backend,
+      mediumsAsync.valueOrNull,
+    ),
     loading: () => MixSessionNotifier._placeholder(),
     error: (_, __) => MixSessionNotifier._placeholder(),
   );
