@@ -24,6 +24,8 @@ pub struct MixedColor {
 pub enum MixError {
     #[error("No components in mix")]
     EmptyMix,
+    #[error("Component weights must be finite and non-negative")]
+    InvalidWeight,
     #[error("Pigment error: {0}")]
     Pigment(#[from] PigmentError),
 }
@@ -44,6 +46,15 @@ impl Mixer {
     pub fn mix_weighted(&self, components: &[MixComponent]) -> Result<MixedColor, MixError> {
         if components.is_empty() {
             return Err(MixError::EmptyMix);
+        }
+
+        // NaN would poison the K/S sums and silently render as white, and
+        // negative weights are physically meaningless — reject both.
+        if components
+            .iter()
+            .any(|c| !c.weight.is_finite() || c.weight < 0.0)
+        {
+            return Err(MixError::InvalidWeight);
         }
 
         let total_weight: f64 = components.iter().map(|c| c.weight).sum();
@@ -75,7 +86,7 @@ impl Mixer {
 
         let mass_tone = srgb;
 
-        let undertone = self.compute_undertone(&reflectance)?;
+        let undertone = self.compute_undertone(&reflectance);
 
         Ok(MixedColor {
             reflectance,
@@ -87,18 +98,24 @@ impl Mixer {
     }
 
     /// Undertone: thin glaze of mix over white (10% concentration).
+    /// Falls back to a synthetic flat-white spectrum if the dataset has no
+    /// `titanium_white`, so mixing never hard-depends on one pigment id.
     fn compute_undertone(
         &self,
         mass_reflectance: &[f64; SPECTRUM_SAMPLES],
-    ) -> Result<(f64, f64, f64), MixError> {
-        let white = self.db.get("titanium_white")?;
+    ) -> (f64, f64, f64) {
+        let white_reflectance: [f64; SPECTRUM_SAMPLES] = self
+            .db
+            .get("titanium_white")
+            .map(|w| w.reflectance)
+            .unwrap_or([0.95; SPECTRUM_SAMPLES]);
         let glaze_t = 0.1;
         let mut undertone_spec = [0.0; SPECTRUM_SAMPLES];
         for i in 0..SPECTRUM_SAMPLES {
             undertone_spec[i] =
-                mix_spectra_ks(&white.reflectance, mass_reflectance, glaze_t)[i];
+                mix_spectra_ks(&white_reflectance, mass_reflectance, glaze_t)[i];
         }
-        Ok(spectrum_to_srgb(&undertone_spec))
+        spectrum_to_srgb(&undertone_spec)
     }
 
     pub fn mix_two(

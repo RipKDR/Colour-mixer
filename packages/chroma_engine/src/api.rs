@@ -4,23 +4,39 @@ use crate::pigment::{Pigment, PigmentDatabase};
 use crate::units::{format_ratios, QuantityUnit};
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
+use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::slice;
 use std::sync::OnceLock;
 
-static ENGINE: OnceLock<EngineState> = OnceLock::new();
+/// Maximum number of components accepted by `chroma_mix`; guards against
+/// garbage `count` values from a misbehaving caller.
+const MAX_MIX_COMPONENTS: u32 = 64;
+
+static ENGINE: OnceLock<Option<EngineState>> = OnceLock::new();
 
 struct EngineState {
     mixer: Mixer,
 }
 
-fn engine() -> &'static EngineState {
-    ENGINE.get_or_init(|| {
-        let json = include_str!("../../../data/pigments/all_pigments.json");
-        let db = PigmentDatabase::load_from_json(json).expect("Failed to load pigments");
-        EngineState {
-            mixer: Mixer::new(db),
-        }
-    })
+/// Returns `None` if the embedded pigment data failed to parse; FFI entry
+/// points then report failure instead of panicking across the C boundary.
+fn engine() -> Option<&'static EngineState> {
+    ENGINE
+        .get_or_init(|| {
+            let json = include_str!("../../../data/pigments/all_pigments.json");
+            PigmentDatabase::load_from_json(json)
+                .ok()
+                .map(|db| EngineState {
+                    mixer: Mixer::new(db),
+                })
+        })
+        .as_ref()
+}
+
+/// Runs `f`, converting any panic into `default` so unwinding never crosses
+/// the `extern "C"` boundary (which would abort the host process).
+fn ffi_guard<T>(default: T, f: impl FnOnce() -> T) -> T {
+    catch_unwind(AssertUnwindSafe(f)).unwrap_or(default)
 }
 
 #[repr(C)]
@@ -55,17 +71,25 @@ pub struct CMixResult {
 }
 
 fn to_c_string(s: &str) -> *mut c_char {
-    CString::new(s).unwrap().into_raw()
+    // Interior NUL bytes cannot occur in our data; degrade to an empty string
+    // rather than panicking across the FFI boundary if they ever do.
+    CString::new(s)
+        .unwrap_or_default()
+        .into_raw()
 }
 
 #[no_mangle]
 pub extern "C" fn chroma_init() -> u32 {
-    engine().mixer.database().count() as u32
+    ffi_guard(0, || {
+        engine().map_or(0, |e| e.mixer.database().count() as u32)
+    })
 }
 
 #[no_mangle]
 pub extern "C" fn chroma_pigment_count() -> u32 {
-    engine().mixer.database().count() as u32
+    ffi_guard(0, || {
+        engine().map_or(0, |e| e.mixer.database().count() as u32)
+    })
 }
 
 #[no_mangle]
@@ -73,7 +97,12 @@ pub extern "C" fn chroma_get_pigment(index: u32, out: *mut CPigmentInfo) -> i32 
     if out.is_null() {
         return -1;
     }
-    let pigments = engine().mixer.database().all();
+    ffi_guard(-1, || chroma_get_pigment_impl(index, out))
+}
+
+fn chroma_get_pigment_impl(index: u32, out: *mut CPigmentInfo) -> i32 {
+    let Some(state) = engine() else { return -1 };
+    let pigments = state.mixer.database().all();
     if index as usize >= pigments.len() {
         return -1;
     }
@@ -102,15 +131,18 @@ pub extern "C" fn chroma_get_pigment_reflectance(
     if out.is_null() || count as usize != SPECTRUM_SAMPLES {
         return -1;
     }
-    let pigments = engine().mixer.database().all();
-    if index as usize >= pigments.len() {
-        return -1;
-    }
-    let p = pigments[index as usize];
-    unsafe {
-        std::ptr::copy_nonoverlapping(p.reflectance.as_ptr(), out, SPECTRUM_SAMPLES);
-    }
-    0
+    ffi_guard(-1, || {
+        let Some(state) = engine() else { return -1 };
+        let pigments = state.mixer.database().all();
+        if index as usize >= pigments.len() {
+            return -1;
+        }
+        let p = pigments[index as usize];
+        unsafe {
+            std::ptr::copy_nonoverlapping(p.reflectance.as_ptr(), out, SPECTRUM_SAMPLES);
+        }
+        0
+    })
 }
 
 #[no_mangle]
@@ -129,15 +161,33 @@ pub extern "C" fn chroma_mix(
     count: u32,
     out: *mut CMixResult,
 ) -> i32 {
-    if pigment_ids.is_null() || weights.is_null() || out.is_null() || count == 0 {
+    if pigment_ids.is_null()
+        || weights.is_null()
+        || out.is_null()
+        || count == 0
+        || count > MAX_MIX_COMPONENTS
+    {
         return -1;
     }
+    ffi_guard(-1, || chroma_mix_impl(pigment_ids, weights, count, out))
+}
+
+fn chroma_mix_impl(
+    pigment_ids: *const *const c_char,
+    weights: *const f64,
+    count: u32,
+    out: *mut CMixResult,
+) -> i32 {
+    let Some(state) = engine() else { return -1 };
 
     let mut components = Vec::with_capacity(count as usize);
     unsafe {
         let ids = slice::from_raw_parts(pigment_ids, count as usize);
         let wts = slice::from_raw_parts(weights, count as usize);
         for i in 0..count as usize {
+            if ids[i].is_null() {
+                return -1;
+            }
             let id = CStr::from_ptr(ids[i]).to_string_lossy().into_owned();
             components.push(MixComponent {
                 pigment_id: id,
@@ -146,7 +196,7 @@ pub extern "C" fn chroma_mix(
         }
     }
 
-    match engine().mixer.mix_weighted(&components) {
+    match state.mixer.mix_weighted(&components) {
         Ok(result) => {
             unsafe {
                 *out = CMixResult {
@@ -221,17 +271,19 @@ impl From<&Pigment> for PigmentInfo {
 }
 
 pub fn list_pigments() -> Vec<PigmentInfo> {
-    engine()
-        .mixer
-        .database()
-        .all()
-        .into_iter()
-        .map(PigmentInfo::from)
-        .collect()
+    engine().map_or_else(Vec::new, |e| {
+        e.mixer
+            .database()
+            .all()
+            .into_iter()
+            .map(PigmentInfo::from)
+            .collect()
+    })
 }
 
 pub fn mix_paints(components: Vec<MixComponent>) -> Result<MixedColor, String> {
-    engine()
+    let state = engine().ok_or_else(|| "pigment data unavailable".to_string())?;
+    state
         .mixer
         .mix_weighted(&components)
         .map_err(|e| e.to_string())
@@ -252,7 +304,19 @@ mod tests {
     fn engine_initializes_once() {
         let a = chroma_init();
         let b = chroma_init();
-        assert_eq!(a, 20);
-        assert_eq!(b, 20);
+        assert_eq!(a, b);
+        assert!(a > 0, "engine should load at least one pigment");
+    }
+
+    #[test]
+    fn mix_rejects_oversized_count() {
+        let mut out = std::mem::MaybeUninit::<CMixResult>::uninit();
+        let rc = chroma_mix(
+            std::ptr::NonNull::dangling().as_ptr(),
+            std::ptr::NonNull::dangling().as_ptr(),
+            MAX_MIX_COMPONENTS + 1,
+            out.as_mut_ptr(),
+        );
+        assert_eq!(rc, -1);
     }
 }

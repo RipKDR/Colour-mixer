@@ -49,16 +49,15 @@ pub fn format_ratios(weights: &[f64], unit: QuantityUnit, density: f64) -> Vec<R
     }
 
     let min_g = grams.iter().cloned().fold(f64::INFINITY, f64::min);
-    weights
+    grams
         .iter()
-        .zip(grams.iter())
-        .map(|(&w, &g)| {
+        .map(|&g| {
             let parts_val = if min_g > 0.0 { g / min_g } else { 0.0 };
             let pct = g / total * 100.0;
             RatioDisplay {
                 parts: format!("{parts_val:.1}"),
                 percent: format!("{pct:.1}%"),
-                grams: format!("{w:.2}g"),
+                grams: format!("{g:.2}g"),
             }
         })
         .collect()
@@ -71,5 +70,12 @@ mod tests {
     #[test]
     fn drops_convert_to_grams() {
         assert!((QuantityUnit::Drops.to_grams(10.0, 1.0) - 0.5).abs() < 0.001);
+    }
+
+    #[test]
+    fn milliliters_display_converted_grams() {
+        // 10 ml at density 1.15 must display as 11.50g, not the raw 10.00.
+        let rows = format_ratios(&[10.0], QuantityUnit::Milliliters, 1.15);
+        assert_eq!(rows[0].grams, "11.50g");
     }
 }

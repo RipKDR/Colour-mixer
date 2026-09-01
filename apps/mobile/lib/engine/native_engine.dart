@@ -110,6 +110,7 @@ class NativeEngineBackend implements EngineBackend {
     Pointer<NativeMixResult>,
   ) _mixFn;
   List<PigmentModel>? _pigments;
+  ChromaEngine? _dartFallback;
 
   static Future<NativeEngineBackend?> tryLoad() async {
     if (kIsWeb) return null;
@@ -246,7 +247,13 @@ class NativeEngineBackend implements EngineBackend {
         weights[i] = components[i].weight;
       }
       if (_mixFn(idPtrs, weights, count, out) != 0) {
-        throw StateError('Native mix failed');
+        // Never let a native failure (unknown id, bad data) crash the UI;
+        // recompute with the Dart engine using the same pigment set.
+        debugPrint('ChromaStudio: native mix failed, using Dart fallback');
+        _dartFallback ??= ChromaEngine({
+          for (final p in _pigments ?? const <PigmentModel>[]) p.id: p,
+        });
+        return _dartFallback!.mix(components);
       }
       final r = out.ref;
       return MixResult(

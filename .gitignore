@@ -5,7 +5,6 @@
 build/
 *.iml
 .idea/
-*.lock
 
 # Flutter
 apps/mobile/.dart_tool/
