@@ -83,9 +83,9 @@ class _ColorMatchScreenState extends ConsumerState<ColorMatchScreen> {
     }
 
     setState(() => _solving = true);
-    MixSuggestion? suggestion;
+    var suggestions = const <MixSuggestion>[];
     try {
-      suggestion = await compute(
+      suggestions = await compute(
         solveMixRequest,
         SolveRequest(
           pigments: {for (final p in engine.allPigments) p.id: p},
@@ -98,8 +98,7 @@ class _ColorMatchScreenState extends ConsumerState<ColorMatchScreen> {
       if (mounted) setState(() => _solving = false);
     }
     if (!mounted) return;
-    final result = suggestion;
-    if (result == null) {
+    if (suggestions.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('No pigments available to suggest from')),
       );
@@ -110,11 +109,11 @@ class _ColorMatchScreenState extends ConsumerState<ColorMatchScreen> {
       context: context,
       showDragHandle: true,
       builder: (sheetContext) => _SuggestionSheet(
-        suggestion: result,
+        suggestions: suggestions,
         engine: engine,
-        onLoad: () {
+        onLoad: (selected) {
           ref.read(mixSessionProvider.notifier).setEntriesFromPalette([
-            for (final c in result.components)
+            for (final c in selected.components)
               MixEntry(pigmentId: c.pigmentId, weight: c.weight * 10),
           ]);
           ref.read(colorTargetProvider.notifier).state = ColorTarget(
@@ -335,19 +334,28 @@ class _ColorMatchScreenState extends ConsumerState<ColorMatchScreen> {
   }
 }
 
-class _SuggestionSheet extends StatelessWidget {
+class _SuggestionSheet extends StatefulWidget {
   const _SuggestionSheet({
-    required this.suggestion,
+    required this.suggestions,
     required this.engine,
     required this.onLoad,
   });
 
-  final MixSuggestion suggestion;
+  /// Ranked alternatives, best first (never empty).
+  final List<MixSuggestion> suggestions;
   final ChromaEngine engine;
-  final VoidCallback onLoad;
+  final ValueChanged<MixSuggestion> onLoad;
+
+  @override
+  State<_SuggestionSheet> createState() => _SuggestionSheetState();
+}
+
+class _SuggestionSheetState extends State<_SuggestionSheet> {
+  int _selected = 0;
 
   @override
   Widget build(BuildContext context) {
+    final suggestion = widget.suggestions[_selected];
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
       child: Column(
@@ -383,9 +391,29 @@ class _SuggestionSheet extends StatelessWidget {
               ),
             ],
           ),
+          if (widget.suggestions.length > 1)
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: Wrap(
+                spacing: 8,
+                children: [
+                  for (var i = 0; i < widget.suggestions.length; i++)
+                    ChoiceChip(
+                      label: Text(
+                        i == 0
+                            ? 'Best'
+                            : 'Alt $i · ΔE '
+                                '${widget.suggestions[i].deltaE.toStringAsFixed(1)}',
+                      ),
+                      selected: _selected == i,
+                      onSelected: (_) => setState(() => _selected = i),
+                    ),
+                ],
+              ),
+            ),
           const SizedBox(height: 16),
           ...suggestion.components.map((c) {
-            final pigment = engine.getPigment(c.pigmentId);
+            final pigment = widget.engine.getPigment(c.pigmentId);
             return ListTile(
               contentPadding: EdgeInsets.zero,
               leading: CircleAvatar(
@@ -399,9 +427,31 @@ class _SuggestionSheet extends StatelessWidget {
               ),
             );
           }),
+          if (suggestion.isTranslucent)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.opacity,
+                    size: 18,
+                    color: Colors.blueGrey.shade600,
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'Translucent recipe (opacity '
+                      '${(suggestion.opacity * 100).toStringAsFixed(0)}%) — '
+                      'reads as a glaze; underlayer will show through.',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           const SizedBox(height: 8),
           FilledButton.icon(
-            onPressed: onLoad,
+            onPressed: () => widget.onLoad(suggestion),
             icon: const Icon(Icons.download),
             label: const Text('Load into current mix'),
             style: FilledButton.styleFrom(

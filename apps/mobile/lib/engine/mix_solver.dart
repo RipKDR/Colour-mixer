@@ -8,19 +8,23 @@ class SolveRequest {
     required this.target,
     this.restrictTo,
     this.maxPigments = 3,
+    this.maxAlternatives = 3,
   });
 
   final Map<String, PigmentModel> pigments;
   final LabColor target;
   final Set<String>? restrictTo;
   final int maxPigments;
+  final int maxAlternatives;
 }
 
-/// Top-level entry point for `compute()`.
-MixSuggestion? solveMixRequest(SolveRequest request) {
-  return MixSolver(ChromaEngine(request.pigments)).solve(
+/// Top-level entry point for `compute()`. Returns ranked alternatives,
+/// best first (empty when no pigments are available).
+List<MixSuggestion> solveMixRequest(SolveRequest request) {
+  return MixSolver(ChromaEngine(request.pigments)).solveAlternatives(
     request.target,
     maxPigments: request.maxPigments,
+    maxAlternatives: request.maxAlternatives,
     restrictTo: request.restrictTo,
   );
 }
@@ -30,34 +34,70 @@ class MixSuggestion {
     required this.components,
     required this.deltaE,
     required this.result,
+    required this.opacity,
+    required this.score,
   });
 
   /// Normalized components (weights sum to 1.0).
   final List<MixComponent> components;
   final double deltaE;
   final MixResult result;
+
+  /// Weight-averaged opacity of the recipe (0 transparent .. 1 opaque).
+  final double opacity;
+
+  /// Ranking score: deltaE plus a penalty per extra pigment, so simpler
+  /// recipes win when the colour match is comparable.
+  final double score;
+
+  /// Recipes below this opacity read as glazes rather than body colour.
+  bool get isTranslucent => opacity < 0.75;
 }
 
 /// Suggests pigment recipes matching a target Lab colour using the
-/// spectral engine. Searches small pigment subsets and refines weights
-/// with coordinate descent on CIEDE2000.
+/// spectral engine. Searches small pigment subsets, refines weights with
+/// coordinate descent on CIEDE2000, and ranks candidates by
+/// deltaE + pigment-count penalty.
 class MixSolver {
   MixSolver(this._engine);
 
   final ChromaEngine _engine;
 
-  /// [restrictTo] limits the search to the given pigment ids (e.g. the
-  /// user's inventory). Null means all pigments are available.
+  /// Extra score added per pigment beyond the first. Keeps the solver from
+  /// preferring a marginal deltaE gain at the cost of a fussier recipe.
+  static const double pigmentCountPenalty = 0.4;
+
+  /// Best single suggestion, or null when no pigments are available.
   MixSuggestion? solve(
     LabColor target, {
     int maxPigments = 3,
+    Set<String>? restrictTo,
+  }) {
+    final all = solveAlternatives(
+      target,
+      maxPigments: maxPigments,
+      maxAlternatives: 1,
+      restrictTo: restrictTo,
+    );
+    return all.isEmpty ? null : all.first;
+  }
+
+  /// Up to [maxAlternatives] suggestions with distinct pigment sets,
+  /// ranked best-first by [MixSuggestion.score].
+  ///
+  /// [restrictTo] limits the search to the given pigment ids (e.g. the
+  /// user's inventory). Null means all pigments are available.
+  List<MixSuggestion> solveAlternatives(
+    LabColor target, {
+    int maxPigments = 3,
+    int maxAlternatives = 3,
     Set<String>? restrictTo,
   }) {
     var pigments = _engine.allPigments;
     if (restrictTo != null) {
       pigments = pigments.where((p) => restrictTo.contains(p.id)).toList();
     }
-    if (pigments.isEmpty) return null;
+    if (pigments.isEmpty) return const [];
 
     // Rank pigments by single-pigment closeness to the target.
     final ranked = [...pigments]..sort((a, b) {
@@ -67,12 +107,16 @@ class MixSolver {
       });
     final pool = ranked.take(8).toList();
 
-    MixSuggestion? best;
+    // Best refined suggestion per distinct pigment set.
+    final bySet = <String, MixSuggestion>{};
 
     void consider(List<PigmentModel> subset) {
       final refined = _refineWeights(subset, target);
-      if (best == null || refined.deltaE < best!.deltaE) {
-        best = refined;
+      final key = (refined.components.map((c) => c.pigmentId).toList()..sort())
+          .join('+');
+      final existing = bySet[key];
+      if (existing == null || refined.score < existing.score) {
+        bySet[key] = refined;
       }
     }
 
@@ -88,7 +132,9 @@ class MixSolver {
       }
     }
 
-    return best;
+    final rankedSuggestions = bySet.values.toList()
+      ..sort((a, b) => a.score.compareTo(b.score));
+    return rankedSuggestions.take(maxAlternatives).toList();
   }
 
   MixSuggestion _refineWeights(List<PigmentModel> subset, LabColor target) {
@@ -133,10 +179,17 @@ class MixSolver {
         MixComponent(pigmentId: subset[i].id, weight: weights[i] / total),
     ];
     final result = _engine.mix(components);
+    final deltaE = Colorimetry.ciede2000(result.lab, target);
+    var opacity = 0.0;
+    for (var i = 0; i < subset.length; i++) {
+      opacity += (weights[i] / total) * subset[i].opacity;
+    }
     return MixSuggestion(
       components: components,
-      deltaE: Colorimetry.ciede2000(result.lab, target),
+      deltaE: deltaE,
       result: result,
+      opacity: opacity,
+      score: deltaE + pigmentCountPenalty * (subset.length - 1),
     );
   }
 }
