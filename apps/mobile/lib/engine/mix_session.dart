@@ -8,6 +8,8 @@ import 'catalog.dart';
 import 'chroma_engine.dart';
 import 'mediums.dart';
 import 'native_engine.dart';
+import 'overlay_engine.dart';
+import '../features/pigments/custom_pigments_provider.dart';
 
 class MixEntry {
   MixEntry({required this.pigmentId, this.weight = 1.0});
@@ -92,8 +94,14 @@ final engineBackendProvider = FutureProvider<EngineBackend>((ref) async {
 
 final engineProvider = FutureProvider<ChromaEngine>((ref) async {
   final backend = await ref.watch(engineBackendProvider.future);
-  final pigments = {for (final p in backend.listPigments()) p.id: p};
-  return ChromaEngine(pigments);
+  var extra = const <PigmentModel>[];
+  try {
+    extra = await ref.watch(customPigmentModelsProvider.future);
+  } catch (_) {}
+  return ChromaEngine({
+    for (final p in backend.listPigments()) p.id: p,
+    for (final p in extra) p.id: p,
+  });
 });
 
 class MixSessionNotifier extends StateNotifier<MixSessionState> {
@@ -263,13 +271,19 @@ class MixSessionNotifier extends StateNotifier<MixSessionState> {
 /// session when the mediums finish loading later.
 final _sessionDepsProvider =
     FutureProvider<(EngineBackend, MediumLibrary?)>((ref) async {
-  final backend = await ref.watch(engineBackendProvider.future);
+  final inner = await ref.watch(engineBackendProvider.future);
   MediumLibrary? mediums;
   try {
     mediums = await ref.watch(mediumLibraryProvider.future);
   } catch (_) {
     mediums = null;
   }
+  var extra = const <PigmentModel>[];
+  try {
+    extra = await ref.watch(customPigmentModelsProvider.future);
+  } catch (_) {}
+  final backend =
+      extra.isEmpty ? inner : OverlayEngineBackend(inner, extra);
   return (backend, mediums);
 });
 

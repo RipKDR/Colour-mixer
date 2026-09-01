@@ -13,6 +13,7 @@ import '../features/inventory/inventory_screen.dart';
 import '../features/learn/learn_screen.dart';
 import '../features/mix/mix_screen.dart';
 import '../features/preview/preview_screen.dart';
+import '../features/pigments/custom_pigments_screen.dart';
 import '../features/recipes/recipes_screen.dart';
 import '../features/settings/settings_screen.dart';
 
@@ -74,6 +75,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/catalog',
         builder: (_, __) => const BrandCatalogScreen(),
+      ),
+      GoRoute(
+        path: '/custom-pigments',
+        builder: (_, __) => const CustomPigmentsScreen(),
       ),
       GoRoute(
         path: '/light-booth',

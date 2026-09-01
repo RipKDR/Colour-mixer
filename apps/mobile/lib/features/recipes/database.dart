@@ -50,12 +50,35 @@ class LessonProgress extends Table {
   Set<Column> get primaryKey => {lessonId};
 }
 
-@DriftDatabase(tables: [MixRecipes, RecipeTags, InventoryItems, LessonProgress])
+class CustomPigments extends Table {
+  TextColumn get id => text()();
+  TextColumn get name => text()();
+  TextColumn get reflectanceJson => text()();
+  RealColumn get opacity => real().withDefault(const Constant(0.9))();
+  RealColumn get tintingStrength => real().withDefault(const Constant(1.0))();
+  TextColumn get binder => text().withDefault(const Constant('acrylic'))();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+@DriftDatabase(
+  tables: [
+    MixRecipes,
+    RecipeTags,
+    InventoryItems,
+    LessonProgress,
+    CustomPigments,
+  ],
+)
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
+  AppDatabase.memory() : super(NativeDatabase.memory());
+
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -66,6 +89,9 @@ class AppDatabase extends _$AppDatabase {
           if (from < 2) {
             await m.createTable(inventoryItems);
             await m.createTable(lessonProgress);
+          }
+          if (from < 3) {
+            await m.createTable(customPigments);
           }
         },
         beforeOpen: (details) async {
@@ -120,6 +146,16 @@ class AppDatabase extends _$AppDatabase {
 
   Future<void> upsertLessonProgress(LessonProgressCompanion row) =>
       into(lessonProgress).insertOnConflictUpdate(row);
+
+  Future<List<CustomPigment>> getAllCustomPigments() =>
+      (select(customPigments)..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
+          .get();
+
+  Future<int> insertCustomPigment(CustomPigmentsCompanion row) =>
+      into(customPigments).insert(row);
+
+  Future<int> deleteCustomPigment(String id) =>
+      (delete(customPigments)..where((t) => t.id.equals(id))).go();
 }
 
 LazyDatabase _openConnection() {

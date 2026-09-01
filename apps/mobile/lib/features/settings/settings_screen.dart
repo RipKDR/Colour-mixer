@@ -89,6 +89,13 @@ class SettingsScreen extends ConsumerWidget {
             trailing: const Icon(Icons.chevron_right),
             onTap: () => context.push('/match'),
           ),
+          ListTile(
+            leading: const Icon(Icons.science_outlined),
+            title: const Text('Custom pigments'),
+            subtitle: const Text('Add paints not in the bundled catalog'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push('/custom-pigments'),
+          ),
           const _SectionHeader('About'),
           Consumer(
             builder: (context, ref, _) {

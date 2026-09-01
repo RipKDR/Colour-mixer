@@ -22,6 +22,7 @@ void main() {
         ProviderScope(
           overrides: [
             engineBackendProvider.overrideWith((ref) => Future.value(backend)),
+            emptyCustomPigmentsOverride(),
           ],
           child: const MaterialApp(home: MixScreen()),
         ),

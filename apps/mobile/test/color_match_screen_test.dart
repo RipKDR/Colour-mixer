@@ -24,6 +24,7 @@ void main() {
           overrides: [
             engineBackendProvider.overrideWith((ref) => Future.value(backend)),
             colorTargetProvider.overrideWith((ref) => null),
+            emptyCustomPigmentsOverride(),
           ],
           child: const MaterialApp(home: ColorMatchScreen()),
         ),

@@ -1410,6 +1410,392 @@ class LessonProgressCompanion extends UpdateCompanion<LessonProgressData> {
   }
 }
 
+class $CustomPigmentsTable extends CustomPigments
+    with TableInfo<$CustomPigmentsTable, CustomPigment> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CustomPigmentsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+      'name', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _reflectanceJsonMeta =
+      const VerificationMeta('reflectanceJson');
+  @override
+  late final GeneratedColumn<String> reflectanceJson = GeneratedColumn<String>(
+      'reflectance_json', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _opacityMeta =
+      const VerificationMeta('opacity');
+  @override
+  late final GeneratedColumn<double> opacity = GeneratedColumn<double>(
+      'opacity', aliasedName, false,
+      type: DriftSqlType.double,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0.9));
+  static const VerificationMeta _tintingStrengthMeta =
+      const VerificationMeta('tintingStrength');
+  @override
+  late final GeneratedColumn<double> tintingStrength = GeneratedColumn<double>(
+      'tinting_strength', aliasedName, false,
+      type: DriftSqlType.double,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(1.0));
+  static const VerificationMeta _binderMeta = const VerificationMeta('binder');
+  @override
+  late final GeneratedColumn<String> binder = GeneratedColumn<String>(
+      'binder', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('acrylic'));
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  @override
+  List<GeneratedColumn> get $columns =>
+      [id, name, reflectanceJson, opacity, tintingStrength, binder, createdAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'custom_pigments';
+  @override
+  VerificationContext validateIntegrity(Insertable<CustomPigment> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+          _nameMeta, name.isAcceptableOrUnknown(data['name']!, _nameMeta));
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('reflectance_json')) {
+      context.handle(
+          _reflectanceJsonMeta,
+          reflectanceJson.isAcceptableOrUnknown(
+              data['reflectance_json']!, _reflectanceJsonMeta));
+    } else if (isInserting) {
+      context.missing(_reflectanceJsonMeta);
+    }
+    if (data.containsKey('opacity')) {
+      context.handle(_opacityMeta,
+          opacity.isAcceptableOrUnknown(data['opacity']!, _opacityMeta));
+    }
+    if (data.containsKey('tinting_strength')) {
+      context.handle(
+          _tintingStrengthMeta,
+          tintingStrength.isAcceptableOrUnknown(
+              data['tinting_strength']!, _tintingStrengthMeta));
+    }
+    if (data.containsKey('binder')) {
+      context.handle(_binderMeta,
+          binder.isAcceptableOrUnknown(data['binder']!, _binderMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  CustomPigment map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CustomPigment(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      name: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
+      reflectanceJson: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}reflectance_json'])!,
+      opacity: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}opacity'])!,
+      tintingStrength: attachedDatabase.typeMapping.read(
+          DriftSqlType.double, data['${effectivePrefix}tinting_strength'])!,
+      binder: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}binder'])!,
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+    );
+  }
+
+  @override
+  $CustomPigmentsTable createAlias(String alias) {
+    return $CustomPigmentsTable(attachedDatabase, alias);
+  }
+}
+
+class CustomPigment extends DataClass implements Insertable<CustomPigment> {
+  final String id;
+  final String name;
+  final String reflectanceJson;
+  final double opacity;
+  final double tintingStrength;
+  final String binder;
+  final DateTime createdAt;
+  const CustomPigment(
+      {required this.id,
+      required this.name,
+      required this.reflectanceJson,
+      required this.opacity,
+      required this.tintingStrength,
+      required this.binder,
+      required this.createdAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['name'] = Variable<String>(name);
+    map['reflectance_json'] = Variable<String>(reflectanceJson);
+    map['opacity'] = Variable<double>(opacity);
+    map['tinting_strength'] = Variable<double>(tintingStrength);
+    map['binder'] = Variable<String>(binder);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  CustomPigmentsCompanion toCompanion(bool nullToAbsent) {
+    return CustomPigmentsCompanion(
+      id: Value(id),
+      name: Value(name),
+      reflectanceJson: Value(reflectanceJson),
+      opacity: Value(opacity),
+      tintingStrength: Value(tintingStrength),
+      binder: Value(binder),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory CustomPigment.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CustomPigment(
+      id: serializer.fromJson<String>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+      reflectanceJson: serializer.fromJson<String>(json['reflectanceJson']),
+      opacity: serializer.fromJson<double>(json['opacity']),
+      tintingStrength: serializer.fromJson<double>(json['tintingStrength']),
+      binder: serializer.fromJson<String>(json['binder']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'name': serializer.toJson<String>(name),
+      'reflectanceJson': serializer.toJson<String>(reflectanceJson),
+      'opacity': serializer.toJson<double>(opacity),
+      'tintingStrength': serializer.toJson<double>(tintingStrength),
+      'binder': serializer.toJson<String>(binder),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  CustomPigment copyWith(
+          {String? id,
+          String? name,
+          String? reflectanceJson,
+          double? opacity,
+          double? tintingStrength,
+          String? binder,
+          DateTime? createdAt}) =>
+      CustomPigment(
+        id: id ?? this.id,
+        name: name ?? this.name,
+        reflectanceJson: reflectanceJson ?? this.reflectanceJson,
+        opacity: opacity ?? this.opacity,
+        tintingStrength: tintingStrength ?? this.tintingStrength,
+        binder: binder ?? this.binder,
+        createdAt: createdAt ?? this.createdAt,
+      );
+  CustomPigment copyWithCompanion(CustomPigmentsCompanion data) {
+    return CustomPigment(
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      reflectanceJson: data.reflectanceJson.present
+          ? data.reflectanceJson.value
+          : this.reflectanceJson,
+      opacity: data.opacity.present ? data.opacity.value : this.opacity,
+      tintingStrength: data.tintingStrength.present
+          ? data.tintingStrength.value
+          : this.tintingStrength,
+      binder: data.binder.present ? data.binder.value : this.binder,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CustomPigment(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('reflectanceJson: $reflectanceJson, ')
+          ..write('opacity: $opacity, ')
+          ..write('tintingStrength: $tintingStrength, ')
+          ..write('binder: $binder, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      id, name, reflectanceJson, opacity, tintingStrength, binder, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CustomPigment &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.reflectanceJson == this.reflectanceJson &&
+          other.opacity == this.opacity &&
+          other.tintingStrength == this.tintingStrength &&
+          other.binder == this.binder &&
+          other.createdAt == this.createdAt);
+}
+
+class CustomPigmentsCompanion extends UpdateCompanion<CustomPigment> {
+  final Value<String> id;
+  final Value<String> name;
+  final Value<String> reflectanceJson;
+  final Value<double> opacity;
+  final Value<double> tintingStrength;
+  final Value<String> binder;
+  final Value<DateTime> createdAt;
+  final Value<int> rowid;
+  const CustomPigmentsCompanion({
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.reflectanceJson = const Value.absent(),
+    this.opacity = const Value.absent(),
+    this.tintingStrength = const Value.absent(),
+    this.binder = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  CustomPigmentsCompanion.insert({
+    required String id,
+    required String name,
+    required String reflectanceJson,
+    this.opacity = const Value.absent(),
+    this.tintingStrength = const Value.absent(),
+    this.binder = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        name = Value(name),
+        reflectanceJson = Value(reflectanceJson);
+  static Insertable<CustomPigment> custom({
+    Expression<String>? id,
+    Expression<String>? name,
+    Expression<String>? reflectanceJson,
+    Expression<double>? opacity,
+    Expression<double>? tintingStrength,
+    Expression<String>? binder,
+    Expression<DateTime>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (reflectanceJson != null) 'reflectance_json': reflectanceJson,
+      if (opacity != null) 'opacity': opacity,
+      if (tintingStrength != null) 'tinting_strength': tintingStrength,
+      if (binder != null) 'binder': binder,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  CustomPigmentsCompanion copyWith(
+      {Value<String>? id,
+      Value<String>? name,
+      Value<String>? reflectanceJson,
+      Value<double>? opacity,
+      Value<double>? tintingStrength,
+      Value<String>? binder,
+      Value<DateTime>? createdAt,
+      Value<int>? rowid}) {
+    return CustomPigmentsCompanion(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      reflectanceJson: reflectanceJson ?? this.reflectanceJson,
+      opacity: opacity ?? this.opacity,
+      tintingStrength: tintingStrength ?? this.tintingStrength,
+      binder: binder ?? this.binder,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (reflectanceJson.present) {
+      map['reflectance_json'] = Variable<String>(reflectanceJson.value);
+    }
+    if (opacity.present) {
+      map['opacity'] = Variable<double>(opacity.value);
+    }
+    if (tintingStrength.present) {
+      map['tinting_strength'] = Variable<double>(tintingStrength.value);
+    }
+    if (binder.present) {
+      map['binder'] = Variable<String>(binder.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CustomPigmentsCompanion(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('reflectanceJson: $reflectanceJson, ')
+          ..write('opacity: $opacity, ')
+          ..write('tintingStrength: $tintingStrength, ')
+          ..write('binder: $binder, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -1417,12 +1803,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $RecipeTagsTable recipeTags = $RecipeTagsTable(this);
   late final $InventoryItemsTable inventoryItems = $InventoryItemsTable(this);
   late final $LessonProgressTable lessonProgress = $LessonProgressTable(this);
+  late final $CustomPigmentsTable customPigments = $CustomPigmentsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
   List<DatabaseSchemaEntity> get allSchemaEntities =>
-      [mixRecipes, recipeTags, inventoryItems, lessonProgress];
+      [mixRecipes, recipeTags, inventoryItems, lessonProgress, customPigments];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules(
         [
@@ -2369,6 +2756,214 @@ typedef $$LessonProgressTableProcessedTableManager = ProcessedTableManager<
     ),
     LessonProgressData,
     PrefetchHooks Function()>;
+typedef $$CustomPigmentsTableCreateCompanionBuilder = CustomPigmentsCompanion
+    Function({
+  required String id,
+  required String name,
+  required String reflectanceJson,
+  Value<double> opacity,
+  Value<double> tintingStrength,
+  Value<String> binder,
+  Value<DateTime> createdAt,
+  Value<int> rowid,
+});
+typedef $$CustomPigmentsTableUpdateCompanionBuilder = CustomPigmentsCompanion
+    Function({
+  Value<String> id,
+  Value<String> name,
+  Value<String> reflectanceJson,
+  Value<double> opacity,
+  Value<double> tintingStrength,
+  Value<String> binder,
+  Value<DateTime> createdAt,
+  Value<int> rowid,
+});
+
+class $$CustomPigmentsTableFilterComposer
+    extends Composer<_$AppDatabase, $CustomPigmentsTable> {
+  $$CustomPigmentsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get reflectanceJson => $composableBuilder(
+      column: $table.reflectanceJson,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get opacity => $composableBuilder(
+      column: $table.opacity, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get tintingStrength => $composableBuilder(
+      column: $table.tintingStrength,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get binder => $composableBuilder(
+      column: $table.binder, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+}
+
+class $$CustomPigmentsTableOrderingComposer
+    extends Composer<_$AppDatabase, $CustomPigmentsTable> {
+  $$CustomPigmentsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get reflectanceJson => $composableBuilder(
+      column: $table.reflectanceJson,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get opacity => $composableBuilder(
+      column: $table.opacity, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get tintingStrength => $composableBuilder(
+      column: $table.tintingStrength,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get binder => $composableBuilder(
+      column: $table.binder, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$CustomPigmentsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $CustomPigmentsTable> {
+  $$CustomPigmentsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get reflectanceJson => $composableBuilder(
+      column: $table.reflectanceJson, builder: (column) => column);
+
+  GeneratedColumn<double> get opacity =>
+      $composableBuilder(column: $table.opacity, builder: (column) => column);
+
+  GeneratedColumn<double> get tintingStrength => $composableBuilder(
+      column: $table.tintingStrength, builder: (column) => column);
+
+  GeneratedColumn<String> get binder =>
+      $composableBuilder(column: $table.binder, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$CustomPigmentsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $CustomPigmentsTable,
+    CustomPigment,
+    $$CustomPigmentsTableFilterComposer,
+    $$CustomPigmentsTableOrderingComposer,
+    $$CustomPigmentsTableAnnotationComposer,
+    $$CustomPigmentsTableCreateCompanionBuilder,
+    $$CustomPigmentsTableUpdateCompanionBuilder,
+    (
+      CustomPigment,
+      BaseReferences<_$AppDatabase, $CustomPigmentsTable, CustomPigment>
+    ),
+    CustomPigment,
+    PrefetchHooks Function()> {
+  $$CustomPigmentsTableTableManager(
+      _$AppDatabase db, $CustomPigmentsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$CustomPigmentsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$CustomPigmentsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$CustomPigmentsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<String> name = const Value.absent(),
+            Value<String> reflectanceJson = const Value.absent(),
+            Value<double> opacity = const Value.absent(),
+            Value<double> tintingStrength = const Value.absent(),
+            Value<String> binder = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              CustomPigmentsCompanion(
+            id: id,
+            name: name,
+            reflectanceJson: reflectanceJson,
+            opacity: opacity,
+            tintingStrength: tintingStrength,
+            binder: binder,
+            createdAt: createdAt,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String id,
+            required String name,
+            required String reflectanceJson,
+            Value<double> opacity = const Value.absent(),
+            Value<double> tintingStrength = const Value.absent(),
+            Value<String> binder = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              CustomPigmentsCompanion.insert(
+            id: id,
+            name: name,
+            reflectanceJson: reflectanceJson,
+            opacity: opacity,
+            tintingStrength: tintingStrength,
+            binder: binder,
+            createdAt: createdAt,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$CustomPigmentsTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $CustomPigmentsTable,
+    CustomPigment,
+    $$CustomPigmentsTableFilterComposer,
+    $$CustomPigmentsTableOrderingComposer,
+    $$CustomPigmentsTableAnnotationComposer,
+    $$CustomPigmentsTableCreateCompanionBuilder,
+    $$CustomPigmentsTableUpdateCompanionBuilder,
+    (
+      CustomPigment,
+      BaseReferences<_$AppDatabase, $CustomPigmentsTable, CustomPigment>
+    ),
+    CustomPigment,
+    PrefetchHooks Function()>;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -2381,4 +2976,6 @@ class $AppDatabaseManager {
       $$InventoryItemsTableTableManager(_db, _db.inventoryItems);
   $$LessonProgressTableTableManager get lessonProgress =>
       $$LessonProgressTableTableManager(_db, _db.lessonProgress);
+  $$CustomPigmentsTableTableManager get customPigments =>
+      $$CustomPigmentsTableTableManager(_db, _db.customPigments);
 }
