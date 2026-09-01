@@ -119,7 +119,12 @@ void main() {
       await tester.pump();
 
       expect(find.byTooltip('Syncing…'), findsOneWidget);
-      final button = tester.widget<IconButton>(find.byTooltip('Syncing…'));
+      final button = tester.widget<IconButton>(
+        find.ancestor(
+          of: find.byTooltip('Syncing…'),
+          matching: find.byType(IconButton),
+        ),
+      );
       expect(button.onPressed, isNull);
     });
   });
