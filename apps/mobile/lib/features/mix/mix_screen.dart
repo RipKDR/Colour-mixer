@@ -77,6 +77,13 @@ class MixScreen extends ConsumerWidget {
                 ),
               ),
               PopupMenuItem(
+                value: '/custom-pigments',
+                child: ListTile(
+                  leading: Icon(Icons.science_outlined),
+                  title: Text('Custom pigments'),
+                ),
+              ),
+              PopupMenuItem(
                 value: '/preview',
                 child: ListTile(
                   leading: Icon(Icons.photo_outlined),

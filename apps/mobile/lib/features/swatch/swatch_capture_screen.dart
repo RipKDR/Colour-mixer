@@ -50,6 +50,7 @@ class _SwatchCaptureScreenState extends ConsumerState<SwatchCaptureScreen> {
       _tapLocal = null;
       _comparison = null;
       _sampledSrgb = null;
+      _whiteReference = null;
     });
   }
 
@@ -117,6 +118,24 @@ class _SwatchCaptureScreenState extends ConsumerState<SwatchCaptureScreen> {
       );
     });
     hapticSelect();
+  }
+
+  void _setWhiteReference((double, double, double)? white) {
+    final srgb = _sampledSrgb;
+    final mixLab = ref.read(mixSessionProvider).result?.lab;
+    setState(() {
+      _whiteReference = white;
+      if (srgb != null && mixLab != null) {
+        final adapted = adaptSample(
+          sampledSrgb: srgb,
+          mixLab: mixLab,
+          whiteReference: white,
+        );
+        _sampledLab = adapted.lab;
+        _sampledColor = adapted.color;
+        _comparison = adapted.comparison;
+      }
+    });
   }
 
   double _containScale(ui.Image image, Size viewport) {
@@ -281,9 +300,7 @@ class _SwatchCaptureScreenState extends ConsumerState<SwatchCaptureScreen> {
                               TextButton(
                                 onPressed: _sampledSrgb == null
                                     ? null
-                                    : () => setState(() {
-                                          _whiteReference = _sampledSrgb;
-                                        }),
+                                    : () => _setWhiteReference(_sampledSrgb),
                                 child: Text(
                                   _whiteReference == null
                                       ? 'Set as white card'
@@ -292,8 +309,7 @@ class _SwatchCaptureScreenState extends ConsumerState<SwatchCaptureScreen> {
                               ),
                               if (_whiteReference != null)
                                 TextButton(
-                                  onPressed: () =>
-                                      setState(() => _whiteReference = null),
+                                  onPressed: () => _setWhiteReference(null),
                                   child: const Text('Clear'),
                                 ),
                             ],

@@ -49,11 +49,12 @@ Status as of 2026-09-01 (`cursor/phase4-solver-swatch-tests-580b`). ✅ done · 
 - ✅ Widget tests for Mix, Color Match, and Recipes screens
 - ✅ Camera white-card chromatic adaptation (Bradford CAT to D65)
 - ✅ Learn ranking (incomplete / weakest ΔE first, “Up next”)
+- ✅ Custom pigment entry (Lab → synthesized 41-sample reflectance, Drift)
 - ⬜ Android device build validated (`./tools/build_mobile.sh android` — needs cargo-ndk/NDK)
 - ⬜ iOS build validated (needs a Mac)
 
 ## Later / ideas (unscheduled)
 
 - Golden tests for screens; broader widget test coverage
-- Custom pigment entry (user-measured spectra)
+- User-measured reflectance curves (replace Lab synthesis)
 - Cloud sync / recipe community sharing

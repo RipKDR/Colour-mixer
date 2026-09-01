@@ -47,6 +47,7 @@ class _PhotoEyedropperScreenState extends ConsumerState<PhotoEyedropperScreen> {
       _sampled = null;
       _sampledLab = null;
       _tapLocal = null;
+      _whiteReference = null;
     });
   }
 

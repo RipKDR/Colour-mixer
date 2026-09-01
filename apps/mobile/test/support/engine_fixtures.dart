@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:chromastudio/engine/chroma_engine.dart';
 import 'package:chromastudio/engine/native_engine.dart';
+import 'package:chromastudio/features/pigments/custom_pigments_provider.dart';
 
 PigmentModel testPigment(
   String id,
@@ -58,3 +59,7 @@ ChromaEngine testChromaEngine() {
 Future<DartEngineBackend> testEngineBackend() async {
   return DartEngineBackend(testChromaEngine());
 }
+
+/// Avoids opening Drift/SQLite in widget tests that construct a mix session.
+Override emptyCustomPigmentsOverride() =>
+    customPigmentModelsProvider.overrideWith((ref) async => []);

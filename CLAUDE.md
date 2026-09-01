@@ -63,7 +63,7 @@ cd apps/mobile && /agent/flutter/bin/dart run build_runner build --delete-confli
    Dart fallback engine. Never write a test that requires the native backend.
 4. **`fromJson`/DB codegen:** `database.g.dart` is committed. Regenerate with
    build_runner after schema edits and bump `schemaVersion` + add a migration in
-   `database.dart` (currently version 2).
+   `database.dart` (currently version 3).
 5. **Never block the UI isolate with the solver.** `MixSolver` runs via
    `compute(solveMixRequest, SolveRequest(...))` — keep it that way.
 
