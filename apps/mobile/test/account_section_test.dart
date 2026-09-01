@@ -104,5 +104,31 @@ void main() {
       expect(find.text('painter@example.com'), findsOneWidget);
       expect(find.text('Sign out'), findsOneWidget);
     });
+
+    testWidgets('session load error offers Retry and recovers', (tester) async {
+      final auth = FakeCloudAuth(
+        user: const CloudUser(id: 'u1', email: 'painter@example.com'),
+      );
+      auth.currentUserError = Exception('offline');
+      await _pumpAccount(
+        tester,
+        overrides: [
+          appwriteConfigProvider.overrideWithValue(_configured),
+          appwriteClientProvider.overrideWithValue(null),
+          cloudAuthProvider.overrideWithValue(auth),
+        ],
+      );
+
+      expect(find.text("Couldn't reach the cloud. Try again."), findsOneWidget);
+      expect(find.text('Retry'), findsOneWidget);
+      expect(find.text('Sign in'), findsNothing);
+
+      auth.currentUserError = null;
+      await tester.tap(find.text('Retry'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('painter@example.com'), findsOneWidget);
+      expect(find.text('Sign out'), findsOneWidget);
+    });
   });
 }

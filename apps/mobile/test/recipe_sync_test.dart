@@ -185,6 +185,20 @@ void main() {
       expect(store.rows.single.cloudId, 'id-1');
     });
 
+    test('setRecipeCloudId throws when the recipe id is missing', () async {
+      final store = FakeRecipeStore([_sample(id: 1)]);
+      await expectLater(
+        store.setRecipeCloudId(99, 'doc', userId: 'user-1'),
+        throwsA(
+          isA<StateError>().having(
+            (e) => e.message,
+            'message',
+            contains('No local recipe with id 99'),
+          ),
+        ),
+      );
+    });
+
     test('overlapping syncRecipes skips the second run', () async {
       final store = FakeRecipeStore([_sample()]);
       final cloud = FakeCloudRecipes(

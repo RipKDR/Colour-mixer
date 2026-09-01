@@ -11,9 +11,14 @@ class FakeCloudAuth implements CloudAuth {
   int registerCalls = 0;
   int signOutCalls = 0;
   Object? nextError;
+  Object? currentUserError;
 
   @override
-  Future<CloudUser?> currentUser() async => user;
+  Future<CloudUser?> currentUser() async {
+    final error = currentUserError;
+    if (error != null) throw error;
+    return user;
+  }
 
   @override
   Future<void> signIn({
@@ -97,6 +102,9 @@ class FakeRecipeStore implements RecipeStore {
     required String userId,
   }) async {
     final index = rows.indexWhere((r) => r.id == id);
+    if (index < 0) {
+      throw StateError('No local recipe with id $id');
+    }
     rows[index] = rows[index].copyWith(
       cloudId: Value(cloudId),
       cloudUserId: Value(userId),

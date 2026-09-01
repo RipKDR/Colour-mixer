@@ -43,7 +43,11 @@ class _AccountSectionState extends ConsumerState<AccountSection> {
       error: (e, _) => ListTile(
         leading: const Icon(Icons.error_outline),
         title: const Text('Cloud account'),
-        subtitle: Text('$e'),
+        subtitle: const Text("Couldn't reach the cloud. Try again."),
+        trailing: TextButton(
+          onPressed: () => refreshCloudSession(ref),
+          child: const Text('Retry'),
+        ),
       ),
       data: (user) {
         if (user == null) return _signInForm(context);
