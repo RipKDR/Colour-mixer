@@ -91,7 +91,7 @@ apps/mobile/               Flutter app (package name: chromastudio)
   assets/pigments/         all_pigments.json (20 pigments, bundled)
   assets/data/brands/      6 brand catalogs (JSON)
   assets/shaders/          mix_blend.frag (palette blend preview)
-  test/                    6 test files, 21 tests
+  test/                    Flutter test suite (unit + widget tests)
 packages/chroma_engine/    Rust engine (cargo lib, cdylib + staticlib)
 packages/chroma_engine_ffi/ Flutter FFI plugin (loader + Android/iOS scaffolding)
 data/                      source-of-truth pigment/brand data (mirrored into assets)

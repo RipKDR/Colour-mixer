@@ -100,8 +100,9 @@ and never echo tokens.
 - **Learn challenges** have a fixed lesson list; progress persists in Drift
   (`LessonProgress` table) but there's no spaced-repetition or difficulty curve.
 - **Inventory cost model** assumes tube price covers `tubeSizeMl` (fallback 37 ml).
-- **`data/brands/` at repo root is empty**; the authoritative brand JSONs live in
-  `apps/mobile/assets/data/brands/`. Consolidating would be a nice cleanup.
+- **Brand data lives in two places**: `data/brands/` at repo root is the source of
+  truth, mirrored into `apps/mobile/assets/data/brands/`. Keep them in sync when
+  editing brand catalogs.
 - The photo eyedropper averages 3×3 pixels of gamma-encoded sRGB; no colour
   management of camera input (assumes the photo is sRGB).
 
