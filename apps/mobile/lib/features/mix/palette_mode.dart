@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/haptics.dart';
 import '../../core/theme.dart';
 import '../../engine/chroma_engine.dart';
+import '../../engine/mix_shader.dart';
 import '../../engine/mix_session.dart';
 
 class PaintBlob {
@@ -34,11 +36,21 @@ class _PaletteModeScreenState extends ConsumerState<PaletteModeScreen> {
   final List<List<PaintBlob>> _undoStack = [];
   Offset? _knifePosition;
   bool _isMixing = false;
+  ui.FragmentShader? _mixShader;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _initBlobs());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initBlobs();
+      _loadShader();
+    });
+  }
+
+  Future<void> _loadShader() async {
+    final program = await ref.read(mixShaderProvider.future);
+    if (!mounted || program == null) return;
+    setState(() => _mixShader = program.fragmentShader());
   }
 
   void _initBlobs() {
@@ -150,10 +162,23 @@ class _PaletteModeScreenState extends ConsumerState<PaletteModeScreen> {
     }
   }
 
+  (Color, Color)? _knifeBlendColors(ChromaEngine engine) {
+    if (_knifePosition == null || _blobs.length < 2) return null;
+    final nearby = _blobs.where((b) {
+      return (b.position - _knifePosition!).distance < b.radius + 30;
+    }).toList();
+    if (nearby.length < 2) return null;
+    final a = engine.getPigment(nearby[0].pigmentId)?.color;
+    final b = engine.getPigment(nearby[1].pigmentId)?.color;
+    if (a == null || b == null) return null;
+    return (a, b);
+  }
+
   @override
   Widget build(BuildContext context) {
     final engine = ref.watch(engineProvider).requireValue;
     final result = ref.watch(mixSessionProvider).result;
+    final blendColors = _knifeBlendColors(engine);
 
     return Column(
       children: [
@@ -194,6 +219,10 @@ class _PaletteModeScreenState extends ConsumerState<PaletteModeScreen> {
                           knifePosition: _knifePosition,
                           mixColor: result?.color,
                           isMixing: _isMixing,
+                          mixShader: _mixShader,
+                          blendColorA: blendColors?.$1,
+                          blendColorB: blendColors?.$2,
+                          canvasSize: constraints.biggest,
                         ),
                       ),
                     );
@@ -246,6 +275,10 @@ class _PalettePainter extends CustomPainter {
     this.knifePosition,
     this.mixColor,
     this.isMixing = false,
+    this.mixShader,
+    this.blendColorA,
+    this.blendColorB,
+    this.canvasSize = Size.zero,
   });
 
   final List<PaintBlob> blobs;
@@ -253,6 +286,10 @@ class _PalettePainter extends CustomPainter {
   final Offset? knifePosition;
   final Color? mixColor;
   final bool isMixing;
+  final ui.FragmentShader? mixShader;
+  final Color? blendColorA;
+  final Color? blendColorB;
+  final Size canvasSize;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -310,10 +347,21 @@ class _PalettePainter extends CustomPainter {
         knifePaint,
       );
       if (isMixing && mixColor != null) {
-        final mixPaint = Paint()
-          ..color = mixColor!.withValues(alpha: 0.3)
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
-        canvas.drawCircle(knifePosition!, 25, mixPaint);
+        if (blendColorA != null && blendColorB != null) {
+          MixShaderPainter(
+            center: knifePosition!,
+            radius: 32,
+            colorA: blendColorA!,
+            colorB: blendColorB!,
+            progress: 0.5,
+            shader: mixShader,
+          ).paint(canvas, canvasSize);
+        } else {
+          final mixPaint = Paint()
+            ..color = mixColor!.withValues(alpha: 0.3)
+            ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
+          canvas.drawCircle(knifePosition!, 25, mixPaint);
+        }
       }
     }
   }
@@ -322,7 +370,10 @@ class _PalettePainter extends CustomPainter {
   bool shouldRepaint(covariant _PalettePainter old) =>
       old.blobs != blobs ||
       old.knifePosition != knifePosition ||
-      old.isMixing != isMixing;
+      old.isMixing != isMixing ||
+      old.mixShader != mixShader ||
+      old.blendColorA != blendColorA ||
+      old.blendColorB != blendColorB;
 }
 
 class _PigmentShelf extends StatelessWidget {

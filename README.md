@@ -76,6 +76,14 @@ Settings → Mixing engine shows **Rust (native FFI)** when the `.so` is loaded,
 - **Schmincke catalog** — 5th brand added to paint browser
 - **Haptic feedback** — Mix sliders, palette knife, and canvas strokes
 
+## Phase 4 (started)
+
+- **Color Match** — Set a Lab target, track live ΔE vs your mix, metamerism warnings
+- **Palette mix shader** — GPU fragment shader blend preview when palette knife mixes blobs
+- **Recipe JSON import** — Import `chromastudio-recipe-v1` files (load to mix or save)
+- **Metamerism alerts** — Light booth and color match flag illuminant-sensitive mixes
+- **Holbein catalog** — 6th brand in paint browser
+
 ## License
 
 Proprietary - ChromaStudio v1.0

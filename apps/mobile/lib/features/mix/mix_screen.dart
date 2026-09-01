@@ -19,6 +19,11 @@ class MixScreen extends ConsumerWidget {
         title: const Text('Mix'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.gps_fixed),
+            tooltip: 'Color match',
+            onPressed: () => context.push('/match'),
+          ),
+          IconButton(
             icon: const Icon(Icons.wb_incandescent_outlined),
             tooltip: 'Light booth',
             onPressed: () => context.push('/light-booth'),

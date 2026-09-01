@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../features/canvas/canvas_screen.dart';
 import '../features/catalog/brand_catalog_screen.dart';
+import '../features/match/color_match_screen.dart';
 import '../features/glaze/glaze_screen.dart';
 import '../features/light_booth/light_booth_screen.dart';
 import '../features/inventory/inventory_screen.dart';
@@ -75,6 +76,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/light-booth',
         builder: (_, __) => const LightBoothScreen(),
+      ),
+      GoRoute(
+        path: '/match',
+        builder: (_, __) => const ColorMatchScreen(),
       ),
     ],
   );

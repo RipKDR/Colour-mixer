@@ -1,0 +1,9 @@
+[
+  {"id": "holbein_acryla_ultramarine", "brand": "Holbein", "line": "Acryla Gouache", "name": "Ultramarine Deep", "pigment_id": "ultramarine_blue", "pigment_codes": ["PB29"], "opacity": "semi-transparent", "price_usd": 12.00, "size_ml": 20},
+  {"id": "holbein_acryla_cadmium_red", "brand": "Holbein", "line": "Acryla Gouache", "name": "Cadmium Red Deep", "pigment_id": "cadmium_red_light", "pigment_codes": ["PR108"], "opacity": "opaque", "price_usd": 14.50, "size_ml": 20},
+  {"id": "holbein_acryla_hansa_yellow", "brand": "Holbein", "line": "Acryla Gouache", "name": "Lemon Yellow", "pigment_id": "hansa_yellow", "pigment_codes": ["PY74"], "opacity": "opaque", "price_usd": 11.00, "size_ml": 20},
+  {"id": "holbein_acryla_titanium_white", "brand": "Holbein", "line": "Acryla Gouache", "name": "Titanium White", "pigment_id": "titanium_white", "pigment_codes": ["PW6"], "opacity": "opaque", "price_usd": 9.50, "size_ml": 20},
+  {"id": "holbein_acryla_phthalo_green", "brand": "Holbein", "line": "Acryla Gouache", "name": "Phthalo Green", "pigment_id": "phthalo_green", "pigment_codes": ["PG7"], "opacity": "transparent", "price_usd": 11.50, "size_ml": 20},
+  {"id": "holbein_acryla_burnt_sienna", "brand": "Holbein", "line": "Acryla Gouache", "name": "Burnt Sienna", "pigment_id": "burnt_sienna", "pigment_codes": ["PBr7"], "opacity": "semi-transparent", "price_usd": 10.50, "size_ml": 20},
+  {"id": "holbein_acryla_quin_magenta", "brand": "Holbein", "line": "Acryla Gouache", "name": "Quinacridone Magenta", "pigment_id": "quinacridone_magenta", "pigment_codes": ["PR122"], "opacity": "transparent", "price_usd": 13.00, "size_ml": 20}
+]

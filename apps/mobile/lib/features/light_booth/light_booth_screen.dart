@@ -5,6 +5,17 @@ import '../../core/theme.dart';
 import '../../engine/chroma_engine.dart';
 import '../../engine/mix_session.dart';
 
+double _maxIlluminantShift(List<double> reflectance, LabColor reference) {
+  var maxShift = 0.0;
+  for (final illuminant in Illuminant.values) {
+    if (illuminant == Illuminant.d65) continue;
+    final under = Colorimetry.spectrumToLabUnder(reflectance, illuminant);
+    final shift = Colorimetry.ciede2000(reference, under);
+    if (shift > maxShift) maxShift = shift;
+  }
+  return maxShift;
+}
+
 class LightBoothScreen extends ConsumerWidget {
   const LightBoothScreen({super.key});
 
@@ -14,6 +25,9 @@ class LightBoothScreen extends ConsumerWidget {
     final result = session.result;
     final reflectance = result?.reflectance ??
         List<double>.filled(Colorimetry.spectrumSamples, 0.5);
+    final maxShift = result != null
+        ? _maxIlluminantShift(reflectance, result.lab)
+        : 0.0;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Virtual Light Booth')),
@@ -25,6 +39,21 @@ class LightBoothScreen extends ConsumerWidget {
             'Spectral reflectance is re-computed per illuminant.',
             style: Theme.of(context).textTheme.bodyMedium,
           ),
+          if (maxShift > 4) ...[
+            const SizedBox(height: 12),
+            Card(
+              color: Colors.orange.shade50,
+              child: ListTile(
+                leading: Icon(Icons.warning_amber, color: Colors.orange.shade800),
+                title: const Text('Metamerism alert'),
+                subtitle: Text(
+                  'This mix shifts up to ${maxShift.toStringAsFixed(1)} ΔE '
+                  'under other illuminants. Consider testing before committing '
+                  'to a large batch.',
+                ),
+              ),
+            ),
+          ],
           const SizedBox(height: 16),
           if (result != null)
             _ReferenceSwatch(

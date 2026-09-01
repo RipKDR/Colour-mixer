@@ -68,6 +68,13 @@ class SettingsScreen extends ConsumerWidget {
             trailing: const Icon(Icons.chevron_right),
             onTap: () => context.push('/light-booth'),
           ),
+          ListTile(
+            leading: const Icon(Icons.gps_fixed),
+            title: const Text('Color match'),
+            subtitle: const Text('Set a target colour and track ΔE'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push('/match'),
+          ),
           const _SectionHeader('About'),
           Consumer(
             builder: (context, ref, _) {

@@ -14,6 +14,8 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo test
         working-directory: packages/chroma_engine
+      - run: cargo build --release
+        working-directory: packages/chroma_engine
 
   flutter:
     runs-on: ubuntu-latest

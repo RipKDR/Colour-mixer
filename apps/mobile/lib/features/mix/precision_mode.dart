@@ -8,6 +8,7 @@ import '../../engine/chroma_engine.dart';
 import '../../engine/mediums.dart';
 import '../../engine/mix_cost.dart';
 import '../../engine/mix_session.dart';
+import '../match/color_match.dart';
 
 class PrecisionModeScreen extends ConsumerWidget {
   const PrecisionModeScreen({super.key});
@@ -23,6 +24,7 @@ class PrecisionModeScreen extends ConsumerWidget {
         final notifier = ref.read(mixSessionProvider.notifier);
         final result = session.result;
         final cost = ref.watch(mixCostProvider);
+        final match = ref.watch(matchAnalysisProvider);
 
         Color displayColor;
         if (session.showUndertone) {
@@ -46,6 +48,25 @@ class PrecisionModeScreen extends ConsumerWidget {
 
         return Column(
           children: [
+            if (match != null)
+              MaterialBanner(
+                content: Text(
+                  'Target match: ΔE ${match.deltaE.toStringAsFixed(1)}',
+                ),
+                leading: Icon(
+                  match.deltaE < 5 ? Icons.check_circle_outline : Icons.tune,
+                  color: match.deltaE < 5 ? Colors.green : AppTheme.ochre,
+                ),
+                backgroundColor: match.deltaE < 5
+                    ? Colors.green.shade50
+                    : Colors.orange.shade50,
+                actions: [
+                  TextButton(
+                    onPressed: () {},
+                    child: Text(matchScoreLabel(match.deltaE)),
+                  ),
+                ],
+              ),
             if (cost.warnings.isNotEmpty)
               MaterialBanner(
                 content: Text(cost.warnings.join(' · ')),

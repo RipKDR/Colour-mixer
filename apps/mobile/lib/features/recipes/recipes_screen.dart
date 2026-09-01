@@ -8,6 +8,7 @@ import '../../core/theme.dart';
 import '../../engine/mix_session.dart';
 import 'database.dart';
 import 'recipe_export.dart';
+import 'recipe_import.dart';
 import 'recipes_provider.dart';
 
 class RecipesScreen extends ConsumerWidget {
@@ -21,6 +22,11 @@ class RecipesScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Recipes'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.upload_file_outlined),
+            tooltip: 'Import recipe JSON',
+            onPressed: () => _importRecipe(context, ref),
+          ),
           IconButton(
             icon: const Icon(Icons.save),
             tooltip: 'Save current mix',
@@ -178,6 +184,55 @@ class RecipesScreen extends ConsumerWidget {
   Future<void> _exportRecipeJson(MixRecipe recipe) async {
     final names = await loadPigmentNameMap();
     await exportRecipeJson(recipe, pigmentNames: names);
+  }
+
+  Future<void> _importRecipe(BuildContext context, WidgetRef ref) async {
+    final parsed = await pickAndParseRecipeFile();
+    if (parsed == null || !context.mounted) return;
+
+    final action = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Import "${parsed.name}"?'),
+        content: Text(
+          '${parsed.entries.length} pigments · '
+          'L:${parsed.labL.toStringAsFixed(0)} '
+          'a:${parsed.labA.toStringAsFixed(0)} '
+          'b:${parsed.labB.toStringAsFixed(0)}',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, 'cancel'),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, 'load'),
+            child: const Text('Load to mix'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, 'save'),
+            child: const Text('Save recipe'),
+          ),
+        ],
+      ),
+    );
+
+    if (action == null || action == 'cancel') return;
+
+    if (action == 'save') {
+      await saveParsedRecipe(ref.read(databaseProvider), parsed);
+      refreshRecipes(ref);
+    }
+
+    if (action == 'load' || action == 'save') {
+      ref.read(mixSessionProvider.notifier).setEntriesFromPalette(parsed.entries);
+    }
+
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Imported "${parsed.name}"')),
+      );
+    }
   }
 }
 

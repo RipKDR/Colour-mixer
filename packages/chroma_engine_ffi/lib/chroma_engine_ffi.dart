@@ -11,10 +11,10 @@ class ChromaEngineFfi {
   static List<ChromaLibraryTarget> targetsForCurrentPlatform() {
     if (Platform.isLinux) {
       return [
-        const ChromaLibraryTarget.file('lib$libraryBaseName.so'),
         const ChromaLibraryTarget.file(
-          '/agent/packages/chroma_engine/target/release/lib$libraryBaseName.so',
+          '/agent/packages/chroma_engine/target/release/libchroma_engine.so',
         ),
+        const ChromaLibraryTarget.file('libchroma_engine.so'),
       ];
     }
     if (Platform.isAndroid) {
