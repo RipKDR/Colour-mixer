@@ -92,21 +92,24 @@ final engineBackendProvider = FutureProvider<EngineBackend>((ref) async {
   return createEngineBackend();
 });
 
-final engineProvider = FutureProvider<ChromaEngine>((ref) async {
-  final backend = await ref.watch(engineBackendProvider.future);
-  var extra = const <PigmentModel>[];
-  try {
-    extra = await ref.watch(customPigmentModelsProvider.future);
-  } catch (_) {}
-  return ChromaEngine({
-    for (final p in backend.listPigments()) p.id: p,
-    for (final p in extra) p.id: p,
-  });
+final engineProvider = Provider<AsyncValue<ChromaEngine>>((ref) {
+  final extra = ref.watch(usableCustomPigmentsProvider);
+  return ref.watch(engineBackendProvider).when(
+    data: (backend) => AsyncData(
+      ChromaEngine({
+        for (final p in backend.listPigments()) p.id: p,
+        for (final p in extra) p.id: p,
+      }),
+    ),
+    loading: () => const AsyncLoading(),
+    error: (e, s) => AsyncError(e, s),
+  );
 });
 
 class MixSessionNotifier extends StateNotifier<MixSessionState> {
   MixSessionNotifier(EngineBackend backend, MediumLibrary? mediums)
-      : _backend = backend,
+      : _inner = backend,
+        _backend = backend,
         _mediums = mediums,
         super(
           MixSessionState(
@@ -129,7 +132,8 @@ class MixSessionNotifier extends StateNotifier<MixSessionState> {
         );
 
   MixSessionNotifier._placeholder()
-      : _backend = null,
+      : _inner = null,
+        _backend = null,
         _mediums = null,
         super(
           const MixSessionState(
@@ -140,9 +144,18 @@ class MixSessionNotifier extends StateNotifier<MixSessionState> {
           ),
         );
 
-  final EngineBackend? _backend;
+  final EngineBackend? _inner;
+  EngineBackend? _backend;
   final MediumLibrary? _mediums;
   Timer? _debounce;
+
+  /// Swap the custom-pigment overlay without reconstructing the session.
+  void setExtraPigments(List<PigmentModel> extra) {
+    final inner = _inner;
+    if (inner == null) return;
+    _backend = extra.isEmpty ? inner : OverlayEngineBackend(inner, extra);
+    _recompute();
+  }
 
   static MixResult _computeMix(
     EngineBackend backend,
@@ -268,7 +281,9 @@ class MixSessionNotifier extends StateNotifier<MixSessionState> {
 
 /// Backend and medium library resolved together, so [mixSessionProvider]
 /// rebuilds exactly once (placeholder -> ready) and never wipes a live
-/// session when the mediums finish loading later.
+/// session when the mediums finish loading later. Custom pigments are
+/// applied via [MixSessionNotifier.setExtraPigments] so a catalog refresh
+/// does not reconstruct the notifier.
 final _sessionDepsProvider =
     FutureProvider<(EngineBackend, MediumLibrary?)>((ref) async {
   final inner = await ref.watch(engineBackendProvider.future);
@@ -278,13 +293,7 @@ final _sessionDepsProvider =
   } catch (_) {
     mediums = null;
   }
-  var extra = const <PigmentModel>[];
-  try {
-    extra = await ref.watch(customPigmentModelsProvider.future);
-  } catch (_) {}
-  final backend =
-      extra.isEmpty ? inner : OverlayEngineBackend(inner, extra);
-  return (backend, mediums);
+  return (inner, mediums);
 });
 
 final mixSessionProvider =
@@ -298,6 +307,10 @@ final mixSessionProvider =
       notifier.setQuantityUnit(ref.read(quantityUnitProvider));
       ref.listen(quantityUnitProvider, (_, next) {
         notifier.setQuantityUnit(next);
+      });
+      notifier.setExtraPigments(ref.read(usableCustomPigmentsProvider));
+      ref.listen<List<PigmentModel>>(usableCustomPigmentsProvider, (_, next) {
+        notifier.setExtraPigments(next);
       });
       return notifier;
     },

@@ -36,7 +36,7 @@ Where every user-facing feature lives. Paths relative to repo root;
 | Feature | File |
 |---------|------|
 | Brand catalog browser (6 brands) | `lib/features/catalog/brand_catalog_screen.dart` + `lib/engine/catalog.dart` + `apps/mobile/assets/data/brands/*.json` |
-| Custom pigment entry (Lab → synthesized spectrum) | `lib/features/pigments/custom_pigments_screen.dart` | `lib/engine/spectrum_from_lab.dart`, overlay `lib/engine/overlay_engine.dart`, Drift `CustomPigments` |
+| Custom pigment entry (Lab → synthesized spectrum) | `lib/features/pigments/custom_pigments_screen.dart` + `custom_pigments_provider.dart`; `lib/engine/spectrum_from_lab.dart`, overlay `lib/engine/overlay_engine.dart`, Drift `CustomPigments` |
 
 ## Recipes & inventory
 

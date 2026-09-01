@@ -37,4 +37,25 @@ void main() {
 
     expect(result.lab.l, greaterThan(20));
   });
+
+  test('catalog-only mix on an overlay matches the inner backend', () async {
+    final inner = await testEngineBackend();
+    final extra = testPigment(
+      'custom_1',
+      'My Red',
+      List.filled(41, 0.4),
+    );
+    final overlay = OverlayEngineBackend(inner, [extra]);
+    const components = [
+      MixComponent(pigmentId: 'titanium_white', weight: 1),
+      MixComponent(pigmentId: 'blue', weight: 1),
+    ];
+
+    final innerResult = inner.mix(components);
+    final overlayResult = overlay.mix(components);
+
+    expect(overlayResult.lab.l, closeTo(innerResult.lab.l, 1e-9));
+    expect(overlayResult.lab.a, closeTo(innerResult.lab.a, 1e-9));
+    expect(overlayResult.lab.b, closeTo(innerResult.lab.b, 1e-9));
+  });
 }
