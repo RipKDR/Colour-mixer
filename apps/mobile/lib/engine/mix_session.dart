@@ -92,12 +92,19 @@ final engineBackendProvider = FutureProvider<EngineBackend>((ref) async {
   return createEngineBackend();
 });
 
+final _lastGoodCustomPigmentsProvider =
+    StateProvider<List<PigmentModel>>((ref) => const []);
+
 final engineProvider = FutureProvider<ChromaEngine>((ref) async {
   final backend = await ref.watch(engineBackendProvider.future);
-  var extra = const <PigmentModel>[];
+  late final List<PigmentModel> extra;
   try {
     extra = await ref.watch(customPigmentModelsProvider.future);
-  } catch (_) {}
+    ref.read(_lastGoodCustomPigmentsProvider.notifier).state = extra;
+  } catch (e) {
+    debugPrint('ChromaStudio: custom pigments failed to load: $e');
+    extra = ref.read(_lastGoodCustomPigmentsProvider);
+  }
   return ChromaEngine({
     for (final p in backend.listPigments()) p.id: p,
     for (final p in extra) p.id: p,
@@ -106,7 +113,8 @@ final engineProvider = FutureProvider<ChromaEngine>((ref) async {
 
 class MixSessionNotifier extends StateNotifier<MixSessionState> {
   MixSessionNotifier(EngineBackend backend, MediumLibrary? mediums)
-      : _backend = backend,
+      : _inner = backend,
+        _backend = backend,
         _mediums = mediums,
         super(
           MixSessionState(
@@ -129,7 +137,8 @@ class MixSessionNotifier extends StateNotifier<MixSessionState> {
         );
 
   MixSessionNotifier._placeholder()
-      : _backend = null,
+      : _inner = null,
+        _backend = null,
         _mediums = null,
         super(
           const MixSessionState(
@@ -140,9 +149,18 @@ class MixSessionNotifier extends StateNotifier<MixSessionState> {
           ),
         );
 
-  final EngineBackend? _backend;
+  final EngineBackend? _inner;
+  EngineBackend? _backend;
   final MediumLibrary? _mediums;
   Timer? _debounce;
+
+  /// Swap the custom-pigment overlay without reconstructing the session.
+  void setCustomPigments(List<PigmentModel> extra) {
+    final inner = _inner;
+    if (inner == null) return;
+    _backend = extra.isEmpty ? inner : OverlayEngineBackend(inner, extra);
+    _recompute();
+  }
 
   static MixResult _computeMix(
     EngineBackend backend,
@@ -278,13 +296,7 @@ final _sessionDepsProvider =
   } catch (_) {
     mediums = null;
   }
-  var extra = const <PigmentModel>[];
-  try {
-    extra = await ref.watch(customPigmentModelsProvider.future);
-  } catch (_) {}
-  final backend =
-      extra.isEmpty ? inner : OverlayEngineBackend(inner, extra);
-  return (backend, mediums);
+  return (inner, mediums);
 });
 
 final mixSessionProvider =
@@ -299,6 +311,19 @@ final mixSessionProvider =
       ref.listen(quantityUnitProvider, (_, next) {
         notifier.setQuantityUnit(next);
       });
+      ref.listen<AsyncValue<List<PigmentModel>>>(
+        customPigmentModelsProvider,
+        (_, next) {
+          next.when(
+            data: notifier.setCustomPigments,
+            loading: () {},
+            error: (e, _) {
+              debugPrint('ChromaStudio: custom pigments failed to load: $e');
+            },
+          );
+        },
+        fireImmediately: true,
+      );
       return notifier;
     },
     loading: () => MixSessionNotifier._placeholder(),
