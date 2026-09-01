@@ -89,6 +89,16 @@ Settings → Mixing engine shows **Rust (native FFI)** when the `.so` is loaded,
 - **Background solving** — Solver runs in an isolate via `compute()` so the UI stays responsive
 - **Colorimetry fix** — `labToSrgb` now applies the correct inverse Lab nonlinearity (caught by a roundtrip test)
 
+## Documentation
+
+- **[CLAUDE.md](CLAUDE.md)** — agent/developer operating manual: environment, commands, gotchas, conventions
+- **[docs/HANDOVER.md](docs/HANDOVER.md)** — session handover: current state, decisions, known gaps, next steps
+- **[docs/DESIGN.md](docs/DESIGN.md)** — architecture: state management, navigation, persistence, data flow
+- **[docs/ENGINE.md](docs/ENGINE.md)** — colour science and FFI reference (Kubelka–Munk, colorimetry, solver, C ABI)
+- **[docs/ROADMAP.md](docs/ROADMAP.md)** — phase-by-phase status and future work
+- **[docs/FEATURES.md](docs/FEATURES.md)** — feature-to-file map
+- **[docs/adr/](docs/adr/)** — architecture decision records
+
 ## License
 
 Proprietary - ChromaStudio v1.0
