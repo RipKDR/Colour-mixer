@@ -114,7 +114,7 @@ and never echo tokens.
 2. **iOS build** — needs a Mac with Xcode; validate `chroma_engine_ffi` podspec.
 3. **Golden tests** for palette shader and key screens (widget tests now cover
    Mix, Color Match, and Recipes empty state).
-5. **Measured pigment spectra** — replace synthetic curves in `data/pigments/`.
+4. **Measured pigment spectra** — replace synthetic curves in `data/pigments/`.
 
 ## Authoritative references
 

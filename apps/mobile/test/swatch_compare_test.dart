@@ -87,5 +87,22 @@ void main() {
         matchScoreLabel(3.0),
       );
     });
+
+    test('setting a white card recomputes Lab without retapping', () {
+      const warm = (1.0, 0.82, 0.55);
+      const mix = LabColor(50, 0, 0);
+      final before = adaptSample(
+        sampledSrgb: warm,
+        mixLab: mix,
+      );
+      final after = adaptSample(
+        sampledSrgb: warm,
+        mixLab: mix,
+        whiteReference: warm,
+      );
+
+      expect(after.lab.a.abs(), lessThan(before.lab.a.abs()));
+      expect(after.comparison.deltaE, isNot(before.comparison.deltaE));
+    });
   });
 }

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:chromastudio/engine/chroma_engine.dart';
 import 'package:chromastudio/engine/native_engine.dart';
 import 'package:chromastudio/features/pigments/custom_pigments_provider.dart';

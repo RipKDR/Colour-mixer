@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'dart:ui' show Color;
 
 import '../../engine/chroma_engine.dart';
 import '../../engine/photo_adapt.dart';
@@ -35,6 +36,33 @@ String swatchVerdictLabel(SwatchVerdict verdict) {
     case SwatchVerdict.far:
       return 'Far from target';
   }
+}
+
+class AdaptedSample {
+  const AdaptedSample({
+    required this.lab,
+    required this.color,
+    required this.comparison,
+  });
+
+  final LabColor lab;
+  final Color color;
+  final SwatchComparison comparison;
+}
+
+/// Recomputes Lab / display colour / ΔE from a stored sRGB sample when the
+/// white-card reference changes (no need to retap the photo).
+AdaptedSample adaptSample({
+  required (double, double, double) sampledSrgb,
+  required LabColor mixLab,
+  (double, double, double)? whiteReference,
+}) {
+  final lab = srgbToLabAdapted(sampledSrgb, whiteReference: whiteReference);
+  return AdaptedSample(
+    lab: lab,
+    color: Colorimetry.srgbToColor(Colorimetry.labToSrgb(lab.l, lab.a, lab.b)),
+    comparison: SwatchComparison.compare(swatchLab: lab, referenceLab: mixLab),
+  );
 }
 
 class SwatchComparison {
