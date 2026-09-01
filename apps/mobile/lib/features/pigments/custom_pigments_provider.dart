@@ -32,17 +32,41 @@ List<PigmentModel> customPigmentModelsFromRows(List<CustomPigment> rows) {
   for (final row in rows) {
     try {
       models.add(customPigmentToModel(row));
-    } catch (e) {
-      debugPrint('ChromaStudio: skipping custom pigment ${row.id}: $e');
+    } on FormatException catch (e, st) {
+      debugPrint('ChromaStudio: skipping custom pigment ${row.id}: $e\n$st');
     }
   }
   return models;
 }
 
 PigmentModel customPigmentToModel(CustomPigment row) {
-  final reflectance = (jsonDecode(row.reflectanceJson) as List)
-      .map((v) => (v as num).toDouble())
-      .toList();
+  late final List<double> reflectance;
+  try {
+    final decoded = jsonDecode(row.reflectanceJson);
+    if (decoded is! List) {
+      throw FormatException(
+        'custom pigment ${row.id}: reflectanceJson must be a JSON array',
+      );
+    }
+    reflectance = [
+      for (final v in decoded)
+        if (v is num)
+          v.toDouble()
+        else
+          throw FormatException(
+            'custom pigment ${row.id}: reflectance sample is not a number ($v)',
+          ),
+    ];
+  } on FormatException {
+    rethrow;
+  } catch (e, st) {
+    Error.throwWithStackTrace(
+      FormatException(
+        'custom pigment ${row.id}: invalid reflectanceJson ($e)',
+      ),
+      st,
+    );
+  }
   validateCustomReflectance(reflectance, pigmentId: row.id);
   final lab = Colorimetry.spectrumToLab(reflectance);
   final srgb = Colorimetry.spectrumToSrgb(reflectance);
