@@ -36,14 +36,14 @@ Where every user-facing feature lives. Paths relative to repo root;
 | Feature | File |
 |---------|------|
 | Brand catalog browser (6 brands) | `lib/features/catalog/brand_catalog_screen.dart` + `lib/engine/catalog.dart` + `apps/mobile/assets/data/brands/*.json` |
-| Custom pigment entry (Lab → synthesized spectrum) | `lib/features/pigments/custom_pigments_screen.dart` | `lib/engine/spectrum_from_lab.dart`, overlay `lib/engine/overlay_engine.dart`, Drift `CustomPigments` |
+| Custom pigment entry (Lab → synthesized spectrum) | `lib/features/pigments/custom_pigments_screen.dart` + `custom_pigments_provider.dart`; `lib/engine/spectrum_from_lab.dart`, overlay `lib/engine/overlay_engine.dart`, Drift `CustomPigments` |
 
 ## Recipes & inventory
 
 | Feature | File |
 |---------|------|
 | Saved recipes (CRUD) | `lib/features/recipes/recipes_screen.dart`, `recipes_provider.dart` |
-| Database (Drift, schema v2) | `lib/features/recipes/database.dart` (+ committed `database.g.dart`) |
+| Database (Drift, schema v3) | `lib/features/recipes/database.dart` (+ committed `database.g.dart`) |
 | Share text / PDF export / JSON export | `lib/features/recipes/recipe_export.dart` + handlers in `recipes_screen.dart` |
 | JSON import (`chromastudio-recipe-v1`) | `lib/features/recipes/recipe_import.dart`; parser `parseRecipeJson` in `lib/features/match/color_match.dart` |
 | Inventory ("Stock"), mix cost, low-stock warnings | `lib/features/inventory/` + `lib/engine/mix_cost.dart` |

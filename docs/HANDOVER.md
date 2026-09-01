@@ -1,127 +1,107 @@
 ---
-artifact_contract: "ce-handoff/v1"
-created_at: "2026-09-01T00:45:00Z"
-title: "ChromaStudio session handover — Phase 4 in progress, repo live on GitHub"
-summary: "Full state of the ChromaStudio build: Phases 1-3 complete, Phase 4 well underway, all tests green, pushed to RipKDR/Colour-mixer main."
-keywords: ["chromastudio", "flutter", "rust", "kubelka-munk", "spectral-mixing", "handover"]
-cwd: "/agent"
-repository: "RipKDR/Colour-mixer"
-branch: "main"
-head: "eb5f437"
-resume_focus: "Android device build, iOS build on Mac, or golden screen tests"
+schema: ce-handoff/v1
+id: chroma-studio-2026-09-01-custom-pigments-merged
+repo: RipKDR/Colour-mixer
+branch: main
+head: 7bb9f53
+base: origin/main
+status: ready_for_next_task
+created_at: 2026-09-01T07:30:00Z
+updated_at: 2026-09-01T07:30:00Z
+parent: chroma-studio-2026-09-01-phase4
+resume_focus: sourcery-custom-pigment-fixes
 ---
 
-# Session Handover
+# Handover — 2026-09-01
 
-Read `CLAUDE.md` (repo root) first for environment and commands. This document is
-the narrative: what happened, what state everything is in, and what comes next.
+## Resume here
 
-## TL;DR
+`origin/main` is **`7bb9f53`** — *Add custom pigment entry from Lab with spectral synthesis (#2)*.
 
-ChromaStudio was built from scratch in this session series: a Flutter + Rust
-spectral paint-mixing app. Phases 1–3 of the roadmap are complete, Phase 4 is in
-progress. Everything is committed and pushed to
-https://github.com/RipKDR/Colour-mixer on `main` (head `eb5f437`, the only branch).
-At handover time: `flutter analyze` clean, 21/21 Flutter tests pass, 10/10 Rust
-tests pass.
+Do **not** continue Phase 4. It shipped.
 
-## Verified state at handover
+**Next work (highest leverage): Sourcery review on merged PR #2**
+https://github.com/RipKDR/Colour-mixer/pull/2#pullrequestreview-5075207940
 
-Commands run and confirmed in this session (see CLAUDE.md for exact invocations):
+Three real bugs/hygiene items:
 
-- `flutter analyze` → "No issues found!"
-- `flutter test` → 21 tests, all pass (native Rust engine loads with full spectra
-  locally; tests also pass on Dart fallback, which is what CI uses)
-- `cargo test --release` → 10 tests pass (6 unit + 4 integration)
-- Remote head verified equal to local head; working tree clean.
+1. **Mix session wipe** — `refreshCustomPigments()` bumps `customPigmentsRefreshProvider`, which rebuilds `customPigmentModelsProvider` and therefore `_sessionDepsProvider`. `mixSessionProvider` then constructs a new `MixSessionNotifier` and the palette resets to ultramarine + hansa yellow. Preserve `MixSessionState` across overlay rebuilds (or rebuild overlay without recreating the notifier). Files: `apps/mobile/lib/engine/mix_session.dart`, `apps/mobile/lib/features/pigments/custom_pigments_screen.dart`.
+2. **Silent empty fallback** — two `catch (_) {}` sites substitute `extra = []` when `customPigmentModelsProvider` fails (`engineProvider` ~line 98 and `_sessionDepsProvider` ~line 282 in `mix_session.dart`). Surface the error or keep last-good extras instead of treating custom ids as unknown.
+3. **Unvalidated `reflectanceJson`** — `customPigmentToModel` must reject non-41 / non-finite / out-of-range spectra loudly. File: `apps/mobile/lib/features/pigments/custom_pigments_provider.dart`.
 
-## Commit history (all on main)
+After that, the original Phase 4 leftover is **Android/iOS native engine builds** (`tools/build_mobile.sh`) — never validated.
 
-| Commit | What it delivered |
-|--------|-------------------|
-| `c9a1df0` | Phase 1 MVP: Rust KM engine, Flutter app, palette/precision mix modes, 20 pigments |
-| `11315e1` | Native Rust FFI on Linux, recipes screen, Linux build script |
-| `f7f1328` | Phase 2 start: Learn challenges, inventory, painting preview |
-| `6836757` | Phase 2 complete: mediums, drying preview, glaze simulator, brand catalog, recipe share, cost warnings |
-| `6fdcbc2` | Phase 3: virtual light booth, PDF export, FFI plugin package, brand expansion |
-| `02eae19` | Native full-spectra FFI (OnceLock thread safety), mobile plugin scaffolding |
-| `bfd6d05` | Phase 4 start: color match screen, recipe JSON import, palette shader, metamerism alerts, Holbein catalog |
-| `64df6e8` | Mix solver ("Suggest recipe"), photo eyedropper, **labToSrgb inverse fix** |
-| `eb5f437` | Solver in background isolate + inventory-only suggestion filter |
+## What shipped this session
 
-## Decisions and constraints that matter
+### PR #1 — solver, swatch, tests, hygiene (merged)
+https://github.com/RipKDR/Colour-mixer/pull/1 — merge `bf3dac7`
 
-1. **Dual engine, Dart is the reference.** The Rust engine accelerates; the Dart
-   engine (`apps/mobile/lib/engine/chroma_engine.dart`) is the always-available
-   fallback and the source of truth for tests. Changes must be mirrored.
-2. **The FFI loader verifies symbols** before trusting a native library, because a
-   stale `.so` once caused confusing failures (missing
-   `chroma_get_pigment_reflectance`). Don't weaken this check.
-3. **Rust statics use `OnceLock`**, not `static mut` — parallel tests SIGSEGV'd
-   before this. Don't regress it.
-4. **labToSrgb bug (fixed in `64df6e8`):** the Lab→XYZ inverse previously applied the
-   forward cube-root nonlinearity. A TDD roundtrip test caught it
-   (`test/srgb_to_lab_test.dart`). All Lab→RGB swatches before that commit were
-   slightly wrong.
-5. **Solver design:** greedy subset search (≤3 pigments from the 8 nearest
-   single-pigment candidates) + multiplicative coordinate descent on CIEDE2000.
-   Chosen over gradient methods for simplicity and robustness; runs in an isolate.
-6. **No PR workflow.** Owner pushes straight to `main`. The old working branch
-   `cursor/chromastudio-mvp-e582` was deleted after merging into `main` (identical).
+- Solver: `solveMixRequest` → `List<MixSuggestion>`; top-3 diverse sets; score = ΔE + `0.4*(n-1)`; `opacity` / `isTranslucent` (`opacity < 0.75`); UI chips on Color Match.
+- Swatch Check `/match/swatch`: 15×15 sample, ΔE vs mix, Bradford CAT white-card (`photo_adapt.dart`). Eyedropper + swatch both have “Set as white card”; follow-up `c8bb559` recomputes Lab/ΔE on toggle without retap and **clears `_whiteReference` on new photo**.
+- Learn ranking: incomplete / worst ΔE first; “Up next”.
+- Widget tests: Mix, Color Match, Recipes, Learn, MixShaderPainter fallback.
+- LICENSE, `data/brands/` copy, CLAUDE.md no longer hardcodes 21 tests.
+- CI: keep `DropdownButtonFormField.value:` (Flutter 3.27.1). `initialValue:` is 3.33+ and **fails CI analyze**.
 
-## Security note (IMPORTANT)
+### PR #2 — custom pigments (merged)
+https://github.com/RipKDR/Colour-mixer/pull/2 — merge `7bb9f53`
 
-The repo owner pasted a **classic GitHub PAT with very broad scopes into plain
-chat** during this session (2026-09-01). It was used to authenticate `gh` on the
-session VM (`~/.config/gh/hosts.yml`). The owner was advised to:
-1. Revoke that token at https://github.com/settings/tokens
-2. Replace it with a fine-grained, repo-scoped token stored as a `GITHUB_TOKEN`
-   secret in Cursor Dashboard → Cloud Agents → Secrets.
+- Lab → 41-sample Gaussian synthesis (`spectrum_from_lab.dart`).
+- Drift `schemaVersion` **3**, table `CustomPigments`.
+- UI `/custom-pigments`.
+- `OverlayEngineBackend`: Dart KM if any mix component is custom; native otherwise. Wired in `mix_session.dart` via `customPigmentModelsProvider`.
+- **Critical test override:** widget tests that build a mix session **must** use `emptyCustomPigmentsOverride()` (`test/support/engine_fixtures.dart`). Otherwise Drift/SQLite hangs `pumpAndSettle`. CI has no `libsqlite3.so` for `AppDatabase.memory()`.
 
-If you are a future agent: check `gh auth status`; do not assume credentials exist,
-and never echo tokens.
+## Authoritative docs
 
-## Known gaps / fragile areas
+- `CLAUDE.md` — agent operating manual (Flutter path, dual-engine, CI constraints).
+- `docs/DESIGN.md` — architecture (schema v3 + `/match/swatch` + `/custom-pigments` updated in this handover).
+- `docs/FEATURES.md` — feature → file map.
+- `docs/ROADMAP.md` — Phase 4 leftovers (Sourcery trio, Android/iOS native builds).
+- `docs/ENGINE.md` — KM / colorimetry notes.
 
-- **Pigment spectra are synthetic.** `tools/generate_pigments.py` produces
-  plausible gaussian/sigmoid reflectance curves (regenerated after the CIE CMF
-  fix — the old curves for blues/greens/purples were inverted and only looked
-  right under the old fabricated CMFs). Replacing them with measured spectra
-  (e.g. from artist-paint spectral databases) would be a big accuracy win.
-- **D50/TL84/LED SPDs are approximations**, not the CIE/IES tables. D65 and
-  Illuminant A behaviour are the trustworthy ones.
+## Environment
 
-- **Mobile native builds are untested.** `tools/build_mobile.sh` and the
-  `chroma_engine_ffi` Android/iOS scaffolding (jniLibs, podspec) exist but have never
-  run against a real NDK/Xcode. Android needs `cargo-ndk` + NDK installed; iOS needs
-  a Mac. The app still works everywhere via the Dart engine fallback.
-- **The palette-mode fragment shader** (`assets/shaders/mix_blend.frag`) is only
-  exercised visually, no golden tests.
-- **Learn challenges** have a fixed lesson list; progress persists in Drift
-  (`LessonProgress` table) but there's no spaced-repetition or difficulty curve.
-- **Inventory cost model** assumes tube price covers `tubeSizeMl` (fallback 37 ml).
-- **Brand data lives in two places**: `data/brands/` at repo root is the source of
-  truth, mirrored into `apps/mobile/assets/data/brands/`. Keep them in sync when
-  editing brand catalogs.
-- The photo eyedropper averages 3×3 pixels of gamma-encoded sRGB. Optional
-  Bradford chromatic adaptation to D65 is available via a white/gray card
-  sample (`lib/engine/photo_adapt.dart`); without it, the photo is assumed sRGB.
+- This VM: Flutter **3.35.2** at `/opt/flutter/bin/flutter` (not on PATH). CI pins **3.27.1**.
+- Rust 1.83. Last cargo: 18 tests (14 lib + 4 integration).
+- Last local Flutter: **71/71** tests; analyze = 4 *info* deprecations for `value:` on 3.35 (CI 3.27 is clean).
+- Cloud agents: open PRs with `ManagePullRequest`; branch `cursor/<slug>-580b`. Owner merges immediately.
 
-## Plausible next steps (in rough priority)
+## Dual-engine rule
 
-1. **Android device build** — install `cargo-ndk` + NDK, run
-   `./tools/build_mobile.sh android`, test the native engine on a device/emulator.
-2. **iOS build** — needs a Mac with Xcode; validate `chroma_engine_ffi` podspec.
-3. **Golden tests** for palette shader and key screens (widget tests now cover
-   Mix, Color Match, and Recipes empty state).
-4. **Measured pigment spectra** — replace synthetic curves in `data/pigments/`.
+Dart `chroma_engine.dart` is the reference. Mix/colorimetry must be mirrored in Rust **unless** Dart-only: solver, photo CAT, spectrum-from-Lab, overlay. Custom pigments **cannot** go through Rust.
 
-## Authoritative references
+## Do not
 
-- `CLAUDE.md` — how to work in this repo (commands, gotchas, conventions)
-- `docs/DESIGN.md` — architecture and data flow
-- `docs/ENGINE.md` — colour science + FFI ABI details
-- `docs/ROADMAP.md` — phase-by-phase status
-- `docs/FEATURES.md` — feature-to-file map
-- `docs/adr/001-flutter-rust-architecture.md` — original architecture decision
-- `README.md` — user-facing overview and feature list
+- Commit `apps/mobile/pubspec.lock` (local Flutter 3.35 vs CI 3.27.1).
+- Use `initialValue:` on `DropdownButtonFormField`.
+- Require native `.so` in Flutter tests (CI has no native lib).
+- Recreate `MixSessionNotifier` when refreshing custom pigments (resets palette).
+- Swallow custom-pigment load failures into `[]`.
+- Accept `reflectanceJson` that is not exactly 41 finite in-range samples.
+
+## Verification
+
+```bash
+cd packages/chroma_engine && cargo test --release && cargo build --release
+cd apps/mobile && /opt/flutter/bin/flutter analyze
+cd apps/mobile && /opt/flutter/bin/flutter test
+```
+
+Any widget test that builds a mix session (`engineBackendProvider` / `_sessionDepsProvider`) **must** include `emptyCustomPigmentsOverride()` from `test/support/engine_fixtures.dart`. Recipes and Learn tests that only override their own providers are fine without it. Do not `pumpAndSettle` a full `ChromaStudioApp` without that override.
+
+## Known remaining gaps
+
+- Android/iOS native builds never validated.
+- Synthetic pigment spectra; D50/TL84/LED SPDs approximate.
+- No shader goldens; no user-measured reflectance upload.
+- Mix session wipe / silent load fallback / unvalidated reflectance (Sourcery, above).
+
+## Copilot notes on merged PRs
+
+- Mix/Match tests: Copilot “unused import” of `mix_session.dart` is a **false positive** (`engineBackendProvider` lives there).
+- White-card: bugs reported on #1 were **fixed** in `c8bb559` (recompute on toggle; clear ref on new photo).
+
+## Security
+
+A classic GitHub PAT with broad scopes was pasted into chat on 2026-09-01. Do not echo tokens. Owner should revoke it at https://github.com/settings/tokens and use a repo-scoped secret instead. Check `gh auth status`; do not assume credentials exist.
