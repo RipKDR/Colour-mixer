@@ -8,6 +8,7 @@ Premium mobile colour mixing laboratory for fine artists. Spectral Kubelka-Munk 
 chromastudio/
 ├── apps/mobile/           # Flutter app (iOS, Android, Linux)
 ├── packages/chroma_engine/ # Rust spectral mixing engine
+├── packages/chroma_engine_ffi/ # FFI loader for mobile native builds
 ├── data/pigments/         # Pigment spectral reflectance data
 └── tools/                 # Data generation scripts
 ```
@@ -58,6 +59,14 @@ Settings → Mixing engine shows **Rust (native FFI)** when the `.so` is loaded,
 - **Recipe share** — Export recipe ratios and Lab values via system share sheet
 - **Cost warnings** — Inventory-based cost estimate and low-stock alerts on mix
 - Native Rust FFI on Linux (Settings shows active engine)
+
+## Phase 3 Features (started)
+
+- **Virtual light booth** — Preview current mix under D65, D50, incandescent, fluorescent, and LED illuminants with ΔE vs reference
+- **Recipe PDF export** — Share formatted A5 recipe cards with swatch, Lab values, and pigment ratios
+- **Brand catalog expansion** — Liquitex and Daniel Smith paints added (4 brands total)
+- **chroma_engine_ffi** — Mobile FFI loader package + `build_mobile.sh` for Android/iOS native builds
+- **High contrast** — Accessibility toggle wired in Settings
 
 ## License
 

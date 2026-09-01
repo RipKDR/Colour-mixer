@@ -7,8 +7,8 @@ class AppTheme {
   static const surfaceLight = Color(0xFFF5F3EF);
   static const surfaceDark = Color(0xFF1C1C1E);
 
-  static ThemeData light() {
-    return ThemeData(
+  static ThemeData light({bool highContrast = false}) {
+    final base = ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
       colorScheme: ColorScheme.fromSeed(
@@ -16,6 +16,7 @@ class AppTheme {
         primary: deepBlue,
         secondary: ochre,
         surface: surfaceLight,
+        contrastLevel: highContrast ? 1.0 : 0.0,
       ),
       scaffoldBackgroundColor: surfaceLight,
       appBarTheme: const AppBarTheme(
@@ -29,10 +30,11 @@ class AppTheme {
         overlayColor: ochre.withValues(alpha: 0.2),
       ),
     );
+    return base;
   }
 
-  static ThemeData dark() {
-    return ThemeData(
+  static ThemeData dark({bool highContrast = false}) {
+    final base = ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
       colorScheme: ColorScheme.fromSeed(
@@ -41,6 +43,7 @@ class AppTheme {
         primary: ochre,
         secondary: deepBlue,
         surface: surfaceDark,
+        contrastLevel: highContrast ? 1.0 : 0.0,
       ),
       scaffoldBackgroundColor: surfaceDark,
       appBarTheme: const AppBarTheme(
@@ -52,5 +55,6 @@ class AppTheme {
         thumbColor: ochre,
       ),
     );
+    return base;
   }
 }

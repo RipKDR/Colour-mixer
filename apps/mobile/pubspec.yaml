@@ -24,6 +24,9 @@ dependencies:
   collection: ^1.19.0
   image_picker: ^1.1.2
   share_plus: ^10.1.4
+  pdf: ^3.11.3
+  chroma_engine_ffi:
+    path: ../../packages/chroma_engine_ffi
 
 dev_dependencies:
   flutter_test:

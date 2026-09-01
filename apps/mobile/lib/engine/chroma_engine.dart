@@ -63,6 +63,20 @@ class MixComponent {
   final double weight;
 }
 
+enum Illuminant {
+  d65('D65', 'Daylight', 'Gallery / north light'),
+  d50('D50', 'Print viewing', 'Museum print standard'),
+  incandescent('A', 'Incandescent', 'Warm gallery bulbs'),
+  fluorescent('TL84', 'Fluorescent', 'Studio tube lighting'),
+  coolLed('Cool LED', 'Cool LED', '6500K studio panels'),
+  warmLed('Warm LED', 'Warm LED', '3000K home studio');
+
+  const Illuminant(this.code, this.label, this.description);
+  final String code;
+  final String label;
+  final String description;
+}
+
 class MixResult {
   const MixResult({
     required this.lab,
@@ -135,11 +149,40 @@ class Colorimetry {
     return 1.0 - 0.5 * (wl - 600) / 180;
   }
 
-  static (double, double, double) spectrumToXyz(List<double> reflectance) {
+  /// Relative spectral power distribution for standard viewing illuminants.
+  static double illuminantSpd(Illuminant illuminant, double wl) {
+    switch (illuminant) {
+      case Illuminant.d65:
+        return _d65(wl);
+      case Illuminant.d50:
+        if (wl < 500) return 0.65 + 0.35 * (wl - 380) / 120;
+        if (wl < 600) return 1.0;
+        return 1.0 - 0.35 * (wl - 600) / 180;
+      case Illuminant.incandescent:
+        return math.pow(560 / wl, 5).toDouble().clamp(0.05, 2.0);
+      case Illuminant.fluorescent:
+        final base = _d65(wl);
+        final spike = wl > 540 && wl < 560 ? 0.25 : 0.0;
+        return base + spike;
+      case Illuminant.coolLed:
+        if (wl < 450) return 0.7 + 0.3 * (450 - wl) / 70;
+        if (wl < 500) return 0.85;
+        return 0.85 - 0.35 * (wl - 500) / 270;
+      case Illuminant.warmLed:
+        if (wl < 500) return 0.55 + 0.45 * (wl - 380) / 120;
+        if (wl < 600) return 1.0;
+        return 1.0 - 0.55 * (wl - 600) / 180;
+    }
+  }
+
+  static (double, double, double) spectrumToXyz(
+    List<double> reflectance, {
+    Illuminant illuminant = Illuminant.d65,
+  }) {
     var x = 0.0, y = 0.0, z = 0.0, yNorm = 0.0;
     for (var i = 0; i < reflectance.length; i++) {
       final wl = _wavelength(i);
-      final illum = _d65(wl);
+      final illum = illuminantSpd(illuminant, wl);
       final r = reflectance[i].clamp(0.0, 1.0);
       x += r * _cmfX(wl) * illum;
       y += r * _cmfY(wl) * illum;
@@ -148,6 +191,22 @@ class Colorimetry {
     }
     if (yNorm <= 0) return (0, 0, 0);
     return (x / yNorm * 100, y / yNorm * 100, z / yNorm * 100);
+  }
+
+  static LabColor spectrumToLabUnder(
+    List<double> reflectance,
+    Illuminant illuminant,
+  ) {
+    final (x, y, z) = spectrumToXyz(reflectance, illuminant: illuminant);
+    return xyzToLab(x, y, z);
+  }
+
+  static Color spectrumToColorUnder(
+    List<double> reflectance,
+    Illuminant illuminant,
+  ) {
+    final (x, y, z) = spectrumToXyz(reflectance, illuminant: illuminant);
+    return srgbToColor(xyzToSrgb(x, y, z));
   }
 
   static LabColor xyzToLab(double x, double y, double z) {

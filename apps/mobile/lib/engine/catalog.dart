@@ -46,7 +46,7 @@ class BrandCatalog {
   final List<BrandPaint> paints;
 
   static Future<BrandCatalog> load() async {
-    final brands = ['golden', 'winsor_newton'];
+    final brands = ['golden', 'winsor_newton', 'liquitex', 'daniel_smith'];
     final all = <BrandPaint>[];
     for (final b in brands) {
       final jsonStr =

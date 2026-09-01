@@ -7,6 +7,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../core/theme.dart';
 import '../../engine/mix_session.dart';
 import 'database.dart';
+import 'recipe_export.dart';
 import 'recipes_provider.dart';
 
 class RecipesScreen extends ConsumerWidget {
@@ -65,6 +66,7 @@ class RecipesScreen extends ConsumerWidget {
                 },
                 onLoad: () => _loadRecipe(context, ref, recipe),
                 onShare: () => _shareRecipe(recipe),
+                onExportPdf: () => _exportRecipePdf(recipe),
               );
             },
           );
@@ -166,6 +168,11 @@ class RecipesScreen extends ConsumerWidget {
     ];
     await Share.share(lines.join('\n'), subject: recipe.name);
   }
+
+  Future<void> _exportRecipePdf(MixRecipe recipe) async {
+    final names = await loadPigmentNameMap();
+    await exportRecipePdf(recipe, pigmentNames: names);
+  }
 }
 
 int _colorToInt(Color color) {
@@ -183,6 +190,7 @@ class _RecipeCard extends StatelessWidget {
     required this.onDuplicate,
     required this.onLoad,
     required this.onShare,
+    required this.onExportPdf,
   });
 
   final MixRecipe recipe;
@@ -190,6 +198,7 @@ class _RecipeCard extends StatelessWidget {
   final VoidCallback onDuplicate;
   final VoidCallback onLoad;
   final VoidCallback onShare;
+  final VoidCallback onExportPdf;
 
   @override
   Widget build(BuildContext context) {
@@ -212,6 +221,8 @@ class _RecipeCard extends StatelessWidget {
             switch (v) {
               case 'share':
                 onShare();
+              case 'pdf':
+                onExportPdf();
               case 'duplicate':
                 onDuplicate();
               case 'delete':
@@ -219,7 +230,8 @@ class _RecipeCard extends StatelessWidget {
             }
           },
           itemBuilder: (_) => const [
-            PopupMenuItem(value: 'share', child: Text('Share')),
+            PopupMenuItem(value: 'share', child: Text('Share text')),
+            PopupMenuItem(value: 'pdf', child: Text('Export PDF')),
             PopupMenuItem(value: 'duplicate', child: Text('Duplicate')),
             PopupMenuItem(value: 'delete', child: Text('Delete')),
           ],

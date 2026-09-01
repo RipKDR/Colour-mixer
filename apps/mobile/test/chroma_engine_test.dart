@@ -92,5 +92,15 @@ void main() {
       final r2 = Colorimetry.ksToReflectance(ks);
       expect((r - r2).abs(), lessThan(0.01));
     });
+
+    test('illuminants produce different Lab for same reflectance', () {
+      final spectrum = List.generate(41, (i) {
+        final wl = 380.0 + i * 10;
+        return wl > 550 ? 0.8 : 0.15;
+      });
+      final cool = Colorimetry.spectrumToLabUnder(spectrum, Illuminant.coolLed);
+      final warm = Colorimetry.spectrumToLabUnder(spectrum, Illuminant.warmLed);
+      expect(Colorimetry.ciede2000(cool, warm), greaterThan(0.5));
+    });
   });
 }

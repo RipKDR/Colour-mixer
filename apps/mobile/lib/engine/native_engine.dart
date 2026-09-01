@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:ffi';
-import 'dart:io';
 
+import 'package:chroma_engine_ffi/chroma_engine_ffi.dart';
 import 'package:ffi/ffi.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -105,23 +105,17 @@ class NativeEngineBackend implements EngineBackend {
   List<PigmentModel>? _pigments;
 
   static Future<NativeEngineBackend?> tryLoad() async {
-    if (kIsWeb || !Platform.isLinux) return null;
-    const paths = [
-      'libchroma_engine.so',
-      '/agent/packages/chroma_engine/target/release/libchroma_engine.so',
-    ];
-    for (final path in paths) {
-      try {
-        if (path.startsWith('/') && !File(path).existsSync()) continue;
-        final lib = DynamicLibrary.open(path);
-        final engine = NativeEngineBackend(lib);
-        await engine.init();
-        return engine;
-      } catch (e) {
-        debugPrint('Could not load $path: $e');
-      }
+    if (kIsWeb) return null;
+    try {
+      final lib = ChromaEngineFfi.tryOpen();
+      if (lib == null) return null;
+      final engine = NativeEngineBackend(lib);
+      await engine.init();
+      return engine;
+    } catch (e) {
+      debugPrint('ChromaStudio: native engine unavailable: $e');
+      return null;
     }
-    return null;
   }
 
   @override

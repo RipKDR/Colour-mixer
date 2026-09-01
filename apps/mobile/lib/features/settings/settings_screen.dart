@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/settings_provider.dart';
 import '../../core/theme.dart';
@@ -12,6 +13,7 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(themeModeProvider);
+    final highContrast = ref.watch(highContrastProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
@@ -54,8 +56,17 @@ class SettingsScreen extends ConsumerWidget {
           SwitchListTile(
             title: const Text('High contrast'),
             subtitle: const Text('Increases UI contrast for readability'),
-            value: false,
-            onChanged: (_) {},
+            value: highContrast,
+            onChanged: (v) =>
+                ref.read(highContrastProvider.notifier).state = v,
+          ),
+          const _SectionHeader('Tools'),
+          ListTile(
+            leading: const Icon(Icons.wb_incandescent_outlined),
+            title: const Text('Virtual light booth'),
+            subtitle: const Text('Preview mixes under different illuminants'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push('/light-booth'),
           ),
           const _SectionHeader('About'),
           Consumer(

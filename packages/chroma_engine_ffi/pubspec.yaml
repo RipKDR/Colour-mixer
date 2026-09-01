@@ -1,0 +1,10 @@
+name: chroma_engine_ffi
+description: FFI loader helpers for the ChromaStudio Rust spectral engine on mobile
+version: 0.1.0
+publish_to: 'none'
+
+environment:
+  sdk: '>=3.6.0 <4.0.0'
+
+dependencies:
+  ffi: ^2.1.3

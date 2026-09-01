@@ -18,11 +18,12 @@ class ChromaStudioApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
     final themeMode = ref.watch(themeModeProvider);
+    final highContrast = ref.watch(highContrastProvider);
     final engineAsync = ref.watch(engineProvider);
 
     return engineAsync.when(
       loading: () => MaterialApp(
-        theme: AppTheme.light(),
+        theme: AppTheme.light(highContrast: highContrast),
         home: const Scaffold(
           body: Center(
             child: Column(
@@ -41,8 +42,8 @@ class ChromaStudioApp extends ConsumerWidget {
       ),
       data: (_) => MaterialApp.router(
         title: 'ChromaStudio',
-        theme: AppTheme.light(),
-        darkTheme: AppTheme.dark(),
+        theme: AppTheme.light(highContrast: highContrast),
+        darkTheme: AppTheme.dark(highContrast: highContrast),
         themeMode: themeMode,
         routerConfig: router,
         debugShowCheckedModeBanner: false,

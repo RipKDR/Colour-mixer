@@ -1,0 +1,10 @@
+[
+  {"id": "ds_ultramarine", "brand": "Daniel Smith", "line": "Extra Fine", "name": "Ultramarine Blue", "pigment_id": "ultramarine_blue", "pigment_codes": ["PB29"], "opacity": "semi-transparent", "price_usd": 16.50, "size_ml": 15},
+  {"id": "ds_cadmium_red", "brand": "Daniel Smith", "line": "Extra Fine", "name": "Cadmium Red Light", "pigment_id": "cadmium_red_light", "pigment_codes": ["PR108"], "opacity": "opaque", "price_usd": 24.00, "size_ml": 15},
+  {"id": "ds_hansa_yellow", "brand": "Daniel Smith", "line": "Extra Fine", "name": "Hansa Yellow Medium", "pigment_id": "hansa_yellow", "pigment_codes": ["PY74"], "opacity": "opaque", "price_usd": 14.50, "size_ml": 15},
+  {"id": "ds_titanium_white", "brand": "Daniel Smith", "line": "Extra Fine", "name": "Titanium White", "pigment_id": "titanium_white", "pigment_codes": ["PW6"], "opacity": "opaque", "price_usd": 12.00, "size_ml": 15},
+  {"id": "ds_phthalo_green", "brand": "Daniel Smith", "line": "Extra Fine", "name": "Phthalo Green (Blue Shade)", "pigment_id": "phthalo_green", "pigment_codes": ["PG7"], "opacity": "transparent", "price_usd": 15.00, "size_ml": 15},
+  {"id": "ds_quin_magenta", "brand": "Daniel Smith", "line": "Extra Fine", "name": "Quinacridone Magenta", "pigment_id": "quinacridone_magenta", "pigment_codes": ["PR122"], "opacity": "transparent", "price_usd": 17.50, "size_ml": 15},
+  {"id": "ds_burnt_umber", "brand": "Daniel Smith", "line": "Extra Fine", "name": "Burnt Umber", "pigment_id": "burnt_umber", "pigment_codes": ["PBr7"], "opacity": "semi-transparent", "price_usd": 13.50, "size_ml": 15},
+  {"id": "ds_burnt_sienna", "brand": "Daniel Smith", "line": "Extra Fine", "name": "Burnt Sienna", "pigment_id": "burnt_sienna", "pigment_codes": ["PBr7"], "opacity": "semi-transparent", "price_usd": 13.50, "size_ml": 15}
+]
