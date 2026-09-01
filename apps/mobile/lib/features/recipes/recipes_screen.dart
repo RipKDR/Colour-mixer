@@ -1,14 +1,18 @@
 import 'dart:convert';
 
+import 'package:appwrite/appwrite.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../../core/appwrite/appwrite_client.dart';
 import '../../core/theme.dart';
 import '../../engine/mix_session.dart';
+import '../account/account_provider.dart';
 import 'database.dart';
 import 'recipe_export.dart';
 import 'recipe_import.dart';
+import 'recipe_sync.dart';
 import 'recipes_provider.dart';
 
 class RecipesScreen extends ConsumerWidget {
@@ -17,11 +21,19 @@ class RecipesScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final recipesAsync = ref.watch(recipesProvider);
+    final showSync = ref.watch(appwriteConfigProvider).isConfigured &&
+        ref.watch(cloudUserProvider).asData?.value != null;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Recipes'),
         actions: [
+          if (showSync)
+            IconButton(
+              icon: const Icon(Icons.cloud_sync_outlined),
+              tooltip: 'Sync now',
+              onPressed: () => _syncNow(context, ref),
+            ),
           IconButton(
             icon: const Icon(Icons.upload_file_outlined),
             tooltip: 'Import recipe JSON',
@@ -137,6 +149,35 @@ class RecipesScreen extends ConsumerWidget {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Recipe saved')),
     );
+  }
+
+  Future<void> _syncNow(BuildContext context, WidgetRef ref) async {
+    final cloud = ref.read(cloudRecipesProvider);
+    final user = await ref.read(cloudUserProvider.future);
+    if (cloud == null || user == null) return;
+
+    try {
+      final result = await syncRecipes(
+        store: DriftRecipeStore(ref.read(databaseProvider)),
+        cloud: cloud,
+        userId: user.id,
+        newDocumentId: () => ID.unique(),
+      );
+      refreshRecipes(ref);
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Synced: ${result.pushed} pushed, ${result.pulled} pulled',
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Sync failed: $e')),
+      );
+    }
   }
 
   void _loadRecipe(BuildContext context, WidgetRef ref, MixRecipe recipe) {

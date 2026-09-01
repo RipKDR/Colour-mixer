@@ -28,6 +28,7 @@ dependencies:
   pdf: ^3.11.3
   chroma_engine_ffi:
     path: ../../packages/chroma_engine_ffi
+  appwrite: ^17.1.0
 
 dev_dependencies:
   flutter_test:

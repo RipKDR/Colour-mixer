@@ -17,6 +17,7 @@ class MixRecipes extends Table {
   RealColumn get labA => real()();
   RealColumn get labB => real()();
   IntColumn get colorValue => integer()();
+  TextColumn get cloudId => text().nullable()();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }
 
@@ -78,7 +79,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.memory() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -92,6 +93,9 @@ class AppDatabase extends _$AppDatabase {
           }
           if (from < 3) {
             await m.createTable(customPigments);
+          }
+          if (from < 4) {
+            await m.addColumn(mixRecipes, mixRecipes.cloudId);
           }
         },
         beforeOpen: (details) async {
@@ -114,6 +118,8 @@ class AppDatabase extends _$AppDatabase {
   Future<bool> deleteRecipe(int id) =>
       (delete(mixRecipes)..where((t) => t.id.equals(id))).go().then((c) => c > 0);
 
+  /// Copies local fields only — [MixRecipe.cloudId] is omitted so the duplicate
+  /// is a new local recipe until the next cloud push.
   Future<int> duplicateRecipe(MixRecipe recipe) => insertRecipe(
         MixRecipesCompanion.insert(
           name: '${recipe.name} (copy)',
@@ -125,6 +131,17 @@ class AppDatabase extends _$AppDatabase {
           colorValue: recipe.colorValue,
         ),
       );
+
+  Future<void> setRecipeCloudId(int id, String cloudId) {
+    return (update(mixRecipes)..where((t) => t.id.equals(id))).write(
+      MixRecipesCompanion(cloudId: Value(cloudId)),
+    );
+  }
+
+  Future<MixRecipe?> getRecipeByCloudId(String cloudId) {
+    return (select(mixRecipes)..where((t) => t.cloudId.equals(cloudId)))
+        .getSingleOrNull();
+  }
 
   Future<List<InventoryItem>> getAllInventory() =>
       (select(inventoryItems)..orderBy([(t) => OrderingTerm.asc(t.customName)]))

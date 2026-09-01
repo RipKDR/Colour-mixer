@@ -43,9 +43,10 @@ Where every user-facing feature lives. Paths relative to repo root;
 | Feature | File |
 |---------|------|
 | Saved recipes (CRUD) | `lib/features/recipes/recipes_screen.dart`, `recipes_provider.dart` |
-| Database (Drift, schema v3) | `lib/features/recipes/database.dart` (+ committed `database.g.dart`) |
-| Share text / PDF export / JSON export | `lib/features/recipes/recipe_export.dart` + handlers in `recipes_screen.dart` |
+| Database (Drift, schema v4) | `lib/features/recipes/database.dart` (+ committed `database.g.dart`); `MixRecipes.cloudId` for Appwrite sync |
+| Share text / PDF export / JSON export | `lib/features/recipes/recipe_export.dart` (`recipeToJson` / `recipeToJsonMap`) + handlers in `recipes_screen.dart` |
 | JSON import (`chromastudio-recipe-v1`) | `lib/features/recipes/recipe_import.dart`; parser `parseRecipeJson` in `lib/features/match/color_match.dart` |
+| Cloud recipe sync (explicit Push/Pull) | `lib/features/recipes/recipe_sync.dart`; Recipes AppBar **Sync now** when signed in |
 | Inventory ("Stock"), mix cost, low-stock warnings | `lib/features/inventory/` + `lib/engine/mix_cost.dart` |
 
 ## Learning
@@ -61,7 +62,33 @@ Where every user-facing feature lives. Paths relative to repo root;
 | Routing (shell + tool routes) | `lib/core/router.dart` |
 | Theme (light/dark, high contrast) | `lib/core/theme.dart` |
 | Settings (theme, units, contrast, engine status, tool links) | `lib/features/settings/settings_screen.dart`, `lib/core/settings_provider.dart` |
+| Account / cloud auth (email + password) | `lib/features/account/account_section.dart`, `account_provider.dart`; client `lib/core/appwrite/` (`package:appwrite`, not `dart_appwrite`) |
 | Haptics wrapper | `lib/core/haptics.dart` |
 | App entry | `lib/main.dart` |
 | CI | `.github/workflows/ci.yml` |
 | Native build scripts | `tools/build_engine.sh` (Linux), `tools/build_mobile.sh` (Android/iOS) |
+
+## Appwrite cloud sync (owner console)
+
+Client uses `package:appwrite` with `--dart-define=APPWRITE_ENDPOINT` and
+`--dart-define=APPWRITE_PROJECT_ID` only (no API keys in the app). If either
+define is empty, Settings shows “Cloud sync not configured” and Recipes hides
+**Sync now**.
+
+Create in the Appwrite console (this repo cannot provision the Cloud project):
+
+1. Enable **email/password** authentication.
+2. Database id `chromastudio`, collection id `recipes`, **document security on**.
+3. Collection create permission: `users`.
+4. Attributes:
+   - `name` string
+   - `notes` string
+   - `pigmentData` string (JSON array of `{id, weight}`)
+   - `labL` / `labA` / `labB` float
+   - `colorValue` integer
+   - `payloadJson` string (`chromastudio-recipe-v1` JSON)
+   - `userId` string (owner id; used for `Query.equal` on pull)
+5. Each upsert sets document `read` + `write` for `Role.user(userId)` only.
+
+Local Drift remains the offline source of truth. Sync is an explicit Push then
+Pull, not a background worker.

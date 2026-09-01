@@ -57,6 +57,12 @@ class $MixRecipesTable extends MixRecipes
   late final GeneratedColumn<int> colorValue = GeneratedColumn<int>(
       'color_value', aliasedName, false,
       type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _cloudIdMeta =
+      const VerificationMeta('cloudId');
+  @override
+  late final GeneratedColumn<String> cloudId = GeneratedColumn<String>(
+      'cloud_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _createdAtMeta =
       const VerificationMeta('createdAt');
   @override
@@ -66,8 +72,18 @@ class $MixRecipesTable extends MixRecipes
       requiredDuringInsert: false,
       defaultValue: currentDateAndTime);
   @override
-  List<GeneratedColumn> get $columns =>
-      [id, name, notes, pigmentData, labL, labA, labB, colorValue, createdAt];
+  List<GeneratedColumn> get $columns => [
+        id,
+        name,
+        notes,
+        pigmentData,
+        labL,
+        labA,
+        labB,
+        colorValue,
+        cloudId,
+        createdAt
+      ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -125,6 +141,10 @@ class $MixRecipesTable extends MixRecipes
     } else if (isInserting) {
       context.missing(_colorValueMeta);
     }
+    if (data.containsKey('cloud_id')) {
+      context.handle(_cloudIdMeta,
+          cloudId.isAcceptableOrUnknown(data['cloud_id']!, _cloudIdMeta));
+    }
     if (data.containsKey('created_at')) {
       context.handle(_createdAtMeta,
           createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
@@ -154,6 +174,8 @@ class $MixRecipesTable extends MixRecipes
           .read(DriftSqlType.double, data['${effectivePrefix}lab_b'])!,
       colorValue: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}color_value'])!,
+      cloudId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}cloud_id']),
       createdAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
     );
@@ -174,6 +196,7 @@ class MixRecipe extends DataClass implements Insertable<MixRecipe> {
   final double labA;
   final double labB;
   final int colorValue;
+  final String? cloudId;
   final DateTime createdAt;
   const MixRecipe(
       {required this.id,
@@ -184,6 +207,7 @@ class MixRecipe extends DataClass implements Insertable<MixRecipe> {
       required this.labA,
       required this.labB,
       required this.colorValue,
+      this.cloudId,
       required this.createdAt});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -196,6 +220,9 @@ class MixRecipe extends DataClass implements Insertable<MixRecipe> {
     map['lab_a'] = Variable<double>(labA);
     map['lab_b'] = Variable<double>(labB);
     map['color_value'] = Variable<int>(colorValue);
+    if (!nullToAbsent || cloudId != null) {
+      map['cloud_id'] = Variable<String>(cloudId);
+    }
     map['created_at'] = Variable<DateTime>(createdAt);
     return map;
   }
@@ -210,6 +237,9 @@ class MixRecipe extends DataClass implements Insertable<MixRecipe> {
       labA: Value(labA),
       labB: Value(labB),
       colorValue: Value(colorValue),
+      cloudId: cloudId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(cloudId),
       createdAt: Value(createdAt),
     );
   }
@@ -226,6 +256,7 @@ class MixRecipe extends DataClass implements Insertable<MixRecipe> {
       labA: serializer.fromJson<double>(json['labA']),
       labB: serializer.fromJson<double>(json['labB']),
       colorValue: serializer.fromJson<int>(json['colorValue']),
+      cloudId: serializer.fromJson<String?>(json['cloudId']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
   }
@@ -241,6 +272,7 @@ class MixRecipe extends DataClass implements Insertable<MixRecipe> {
       'labA': serializer.toJson<double>(labA),
       'labB': serializer.toJson<double>(labB),
       'colorValue': serializer.toJson<int>(colorValue),
+      'cloudId': serializer.toJson<String?>(cloudId),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
   }
@@ -254,6 +286,7 @@ class MixRecipe extends DataClass implements Insertable<MixRecipe> {
           double? labA,
           double? labB,
           int? colorValue,
+          Value<String?> cloudId = const Value.absent(),
           DateTime? createdAt}) =>
       MixRecipe(
         id: id ?? this.id,
@@ -264,6 +297,7 @@ class MixRecipe extends DataClass implements Insertable<MixRecipe> {
         labA: labA ?? this.labA,
         labB: labB ?? this.labB,
         colorValue: colorValue ?? this.colorValue,
+        cloudId: cloudId.present ? cloudId.value : this.cloudId,
         createdAt: createdAt ?? this.createdAt,
       );
   MixRecipe copyWithCompanion(MixRecipesCompanion data) {
@@ -278,6 +312,7 @@ class MixRecipe extends DataClass implements Insertable<MixRecipe> {
       labB: data.labB.present ? data.labB.value : this.labB,
       colorValue:
           data.colorValue.present ? data.colorValue.value : this.colorValue,
+      cloudId: data.cloudId.present ? data.cloudId.value : this.cloudId,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
@@ -293,14 +328,15 @@ class MixRecipe extends DataClass implements Insertable<MixRecipe> {
           ..write('labA: $labA, ')
           ..write('labB: $labB, ')
           ..write('colorValue: $colorValue, ')
+          ..write('cloudId: $cloudId, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(
-      id, name, notes, pigmentData, labL, labA, labB, colorValue, createdAt);
+  int get hashCode => Object.hash(id, name, notes, pigmentData, labL, labA,
+      labB, colorValue, cloudId, createdAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -313,6 +349,7 @@ class MixRecipe extends DataClass implements Insertable<MixRecipe> {
           other.labA == this.labA &&
           other.labB == this.labB &&
           other.colorValue == this.colorValue &&
+          other.cloudId == this.cloudId &&
           other.createdAt == this.createdAt);
 }
 
@@ -325,6 +362,7 @@ class MixRecipesCompanion extends UpdateCompanion<MixRecipe> {
   final Value<double> labA;
   final Value<double> labB;
   final Value<int> colorValue;
+  final Value<String?> cloudId;
   final Value<DateTime> createdAt;
   const MixRecipesCompanion({
     this.id = const Value.absent(),
@@ -335,6 +373,7 @@ class MixRecipesCompanion extends UpdateCompanion<MixRecipe> {
     this.labA = const Value.absent(),
     this.labB = const Value.absent(),
     this.colorValue = const Value.absent(),
+    this.cloudId = const Value.absent(),
     this.createdAt = const Value.absent(),
   });
   MixRecipesCompanion.insert({
@@ -346,6 +385,7 @@ class MixRecipesCompanion extends UpdateCompanion<MixRecipe> {
     required double labA,
     required double labB,
     required int colorValue,
+    this.cloudId = const Value.absent(),
     this.createdAt = const Value.absent(),
   })  : name = Value(name),
         pigmentData = Value(pigmentData),
@@ -362,6 +402,7 @@ class MixRecipesCompanion extends UpdateCompanion<MixRecipe> {
     Expression<double>? labA,
     Expression<double>? labB,
     Expression<int>? colorValue,
+    Expression<String>? cloudId,
     Expression<DateTime>? createdAt,
   }) {
     return RawValuesInsertable({
@@ -373,6 +414,7 @@ class MixRecipesCompanion extends UpdateCompanion<MixRecipe> {
       if (labA != null) 'lab_a': labA,
       if (labB != null) 'lab_b': labB,
       if (colorValue != null) 'color_value': colorValue,
+      if (cloudId != null) 'cloud_id': cloudId,
       if (createdAt != null) 'created_at': createdAt,
     });
   }
@@ -386,6 +428,7 @@ class MixRecipesCompanion extends UpdateCompanion<MixRecipe> {
       Value<double>? labA,
       Value<double>? labB,
       Value<int>? colorValue,
+      Value<String?>? cloudId,
       Value<DateTime>? createdAt}) {
     return MixRecipesCompanion(
       id: id ?? this.id,
@@ -396,6 +439,7 @@ class MixRecipesCompanion extends UpdateCompanion<MixRecipe> {
       labA: labA ?? this.labA,
       labB: labB ?? this.labB,
       colorValue: colorValue ?? this.colorValue,
+      cloudId: cloudId ?? this.cloudId,
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -427,6 +471,9 @@ class MixRecipesCompanion extends UpdateCompanion<MixRecipe> {
     if (colorValue.present) {
       map['color_value'] = Variable<int>(colorValue.value);
     }
+    if (cloudId.present) {
+      map['cloud_id'] = Variable<String>(cloudId.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -444,6 +491,7 @@ class MixRecipesCompanion extends UpdateCompanion<MixRecipe> {
           ..write('labA: $labA, ')
           ..write('labB: $labB, ')
           ..write('colorValue: $colorValue, ')
+          ..write('cloudId: $cloudId, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
@@ -1833,6 +1881,7 @@ typedef $$MixRecipesTableCreateCompanionBuilder = MixRecipesCompanion Function({
   required double labA,
   required double labB,
   required int colorValue,
+  Value<String?> cloudId,
   Value<DateTime> createdAt,
 });
 typedef $$MixRecipesTableUpdateCompanionBuilder = MixRecipesCompanion Function({
@@ -1844,6 +1893,7 @@ typedef $$MixRecipesTableUpdateCompanionBuilder = MixRecipesCompanion Function({
   Value<double> labA,
   Value<double> labB,
   Value<int> colorValue,
+  Value<String?> cloudId,
   Value<DateTime> createdAt,
 });
 
@@ -1899,6 +1949,9 @@ class $$MixRecipesTableFilterComposer
 
   ColumnFilters<int> get colorValue => $composableBuilder(
       column: $table.colorValue, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get cloudId => $composableBuilder(
+      column: $table.cloudId, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnFilters(column));
@@ -1958,6 +2011,9 @@ class $$MixRecipesTableOrderingComposer
   ColumnOrderings<int> get colorValue => $composableBuilder(
       column: $table.colorValue, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get cloudId => $composableBuilder(
+      column: $table.cloudId, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnOrderings(column));
 }
@@ -1994,6 +2050,9 @@ class $$MixRecipesTableAnnotationComposer
 
   GeneratedColumn<int> get colorValue => $composableBuilder(
       column: $table.colorValue, builder: (column) => column);
+
+  GeneratedColumn<String> get cloudId =>
+      $composableBuilder(column: $table.cloudId, builder: (column) => column);
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -2051,6 +2110,7 @@ class $$MixRecipesTableTableManager extends RootTableManager<
             Value<double> labA = const Value.absent(),
             Value<double> labB = const Value.absent(),
             Value<int> colorValue = const Value.absent(),
+            Value<String?> cloudId = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
           }) =>
               MixRecipesCompanion(
@@ -2062,6 +2122,7 @@ class $$MixRecipesTableTableManager extends RootTableManager<
             labA: labA,
             labB: labB,
             colorValue: colorValue,
+            cloudId: cloudId,
             createdAt: createdAt,
           ),
           createCompanionCallback: ({
@@ -2073,6 +2134,7 @@ class $$MixRecipesTableTableManager extends RootTableManager<
             required double labA,
             required double labB,
             required int colorValue,
+            Value<String?> cloudId = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
           }) =>
               MixRecipesCompanion.insert(
@@ -2084,6 +2146,7 @@ class $$MixRecipesTableTableManager extends RootTableManager<
             labA: labA,
             labB: labB,
             colorValue: colorValue,
+            cloudId: cloudId,
             createdAt: createdAt,
           ),
           withReferenceMapper: (p0) => p0
