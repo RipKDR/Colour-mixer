@@ -1,6 +1,6 @@
 # ChromaStudio Roadmap & Status
 
-Status as of 2026-09-01 (`cursor/phase4-solver-swatch-tests-580b`). ✅ done · 🔶 partial · ⬜ not started
+Status as of 2026-09-01 (`main` @ `7bb9f53`, PRs #1 and #2 merged). ✅ done · 🔶 partial · ⬜ not started
 
 ## Phase 1 — MVP ✅
 
@@ -33,7 +33,7 @@ Status as of 2026-09-01 (`cursor/phase4-solver-swatch-tests-580b`). ✅ done · 
 - ✅ Brand expansion (6 brands: W&N, Golden, Liquitex, Daniel Smith, Schmincke, Holbein)
 - ✅ High-contrast accessibility mode, haptic feedback
 
-## Phase 4 — Matching & intelligence 🔶 (in progress)
+## Phase 4 — Matching & intelligence 🔶 (shipped except mobile native builds)
 
 - ✅ Color Match screen (Lab target, live ΔE, presets)
 - ✅ Metamerism alerts (light booth + match screen, >4 ΔE threshold)
@@ -50,6 +50,9 @@ Status as of 2026-09-01 (`cursor/phase4-solver-swatch-tests-580b`). ✅ done · 
 - ✅ Camera white-card chromatic adaptation (Bradford CAT to D65)
 - ✅ Learn ranking (incomplete / weakest ΔE first, “Up next”)
 - ✅ Custom pigment entry (Lab → synthesized 41-sample reflectance, Drift)
+- ⬜ Sourcery follow-up on PR #2: preserve mix session when custom pigments
+  refresh; do not swallow load errors into `[]`; validate 41-sample
+  `reflectanceJson` (`mix_session.dart`, `custom_pigments_provider.dart`)
 - ⬜ Android device build validated (`./tools/build_mobile.sh android` — needs cargo-ndk/NDK)
 - ⬜ iOS build validated (needs a Mac)
 

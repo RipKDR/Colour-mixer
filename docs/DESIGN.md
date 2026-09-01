@@ -50,19 +50,22 @@ thrash the engine.
 `core/router.dart`. A `StatefulShellRoute.indexedStack` provides the bottom nav
 with six branches: `/mix`, `/canvas`, `/recipes`, `/learn`, `/inventory`,
 `/settings`. Full-screen tool routes sit outside the shell: `/preview`, `/glaze`,
-`/catalog`, `/light-booth`, `/match`, and nested `/match/eyedropper`.
+`/catalog`, `/light-booth`, `/match`, nested `/match/eyedropper` and
+`/match/swatch`, and `/custom-pigments`.
 
 ## Persistence (Drift/SQLite)
 
 `features/recipes/database.dart`, generated code committed in `database.g.dart`.
-`schemaVersion = 2`. Tables:
+`schemaVersion = 3`. Tables:
 
 - **Recipes** — name, notes, pigment entries (JSON), Lab + ARGB snapshot, binder.
 - **InventoryItems** — pigmentId, brand, tube size ml, price, remaining fraction.
 - **LessonProgress** — per-lesson best ΔE for Learn challenges.
+- **CustomPigments** — user-entered paints (Lab + synthesized 41-sample reflectance JSON, opacity, tinting, binder).
 
-Migration strategy: `onUpgrade` adds the v2 tables. Any schema change requires a
-version bump + migration + `build_runner` regeneration.
+Migration strategy: `onUpgrade` adds v2 tables, then the v3 `CustomPigments`
+table. Any schema change requires a version bump + migration + `build_runner`
+regeneration.
 
 ## Data pipeline
 
