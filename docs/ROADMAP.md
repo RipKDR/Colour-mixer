@@ -1,6 +1,6 @@
 # ChromaStudio Roadmap & Status
 
-Status as of 2026-09-01 (`main` @ `eb5f437`). ✅ done · 🔶 partial · ⬜ not started
+Status as of 2026-09-01 (`cursor/phase4-solver-swatch-tests-580b`). ✅ done · 🔶 partial · ⬜ not started
 
 ## Phase 1 — MVP ✅
 
@@ -43,17 +43,17 @@ Status as of 2026-09-01 (`main` @ `eb5f437`). ✅ done · 🔶 partial · ⬜ no
 - ✅ Photo eyedropper target picking (3×3 averaged sample → Lab)
 - ✅ Inventory-aware solver ("Only suggest from my paints")
 - ✅ Solver in background isolate (`compute`)
-- ⬜ AR swatch capture (camera capture of painted swatch vs mix)
+- ✅ Solver refinements: multiple alternative recipes, pigment-count penalty,
+  opacity/translucency annotation on suggestions
+- ✅ Swatch capture (photograph painted swatch vs predicted mix, ΔE verdict)
+- ✅ Widget tests for Mix, Color Match, and Recipes screens
+- ✅ Camera white-card chromatic adaptation (Bradford CAT to D65)
+- ✅ Learn ranking (incomplete / weakest ΔE first, “Up next”)
 - ⬜ Android device build validated (`./tools/build_mobile.sh android` — needs cargo-ndk/NDK)
 - ⬜ iOS build validated (needs a Mac)
-- ⬜ Solver refinements: multiple alternative recipes, pigment-count penalty,
-  opacity/tinting-aware objective
 
 ## Later / ideas (unscheduled)
 
 - Golden tests for screens; broader widget test coverage
-- Spaced repetition & difficulty curve for Learn
-- Camera colour management for eyedropper (currently assumes sRGB photos)
 - Custom pigment entry (user-measured spectra)
 - Cloud sync / recipe community sharing
-- Repo hygiene: consolidate `data/` vs `apps/mobile/assets/data/`, add LICENSE file

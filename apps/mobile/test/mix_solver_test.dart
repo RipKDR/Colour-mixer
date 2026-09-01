@@ -4,7 +4,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:chromastudio/engine/chroma_engine.dart';
 import 'package:chromastudio/engine/mix_solver.dart';
 
-PigmentModel _pigment(String id, String name, List<double> reflectance) {
+PigmentModel _pigment(
+  String id,
+  String name,
+  List<double> reflectance, {
+  double opacity = 0.9,
+}) {
   final lab = Colorimetry.spectrumToLab(reflectance);
   final srgb = Colorimetry.spectrumToSrgb(reflectance);
   return PigmentModel(
@@ -12,7 +17,7 @@ PigmentModel _pigment(String id, String name, List<double> reflectance) {
     name: name,
     pigmentCodes: const [],
     reflectance: reflectance,
-    opacity: 0.9,
+    opacity: opacity,
     tintingStrength: 1.0,
     toxicity: 'low',
     binder: 'acrylic',
@@ -121,10 +126,89 @@ void main() {
         target: const LabColor(70, 5, 15),
       );
 
-      final suggestion = await compute(solveMixRequest, request);
+      final suggestions = await compute(solveMixRequest, request);
 
-      expect(suggestion, isNotNull);
-      expect(suggestion!.components, isNotEmpty);
+      expect(suggestions, isNotEmpty);
+      expect(suggestions.first.components, isNotEmpty);
+    });
+  });
+
+  group('MixSolver alternatives', () {
+    test('solveAlternatives returns up to 3 diverse suggestions', () {
+      final engine = _testEngine();
+      final target = engine.mix([
+        const MixComponent(pigmentId: 'blue', weight: 1),
+        const MixComponent(pigmentId: 'yellow', weight: 1),
+      ]).lab;
+
+      final suggestions = MixSolver(engine).solveAlternatives(target);
+
+      expect(suggestions, isNotEmpty);
+      expect(suggestions.length, lessThanOrEqualTo(3));
+      // Each alternative uses a distinct pigment set.
+      final sets = suggestions
+          .map((s) => (s.components.map((c) => c.pigmentId).toList()..sort())
+              .join('+'))
+          .toSet();
+      expect(sets.length, suggestions.length);
+    });
+
+    test('alternatives are ranked best-first by penalised score', () {
+      final engine = _testEngine();
+      final suggestions =
+          MixSolver(engine).solveAlternatives(const LabColor(70, 5, 15));
+
+      for (var i = 1; i < suggestions.length; i++) {
+        expect(
+          suggestions[i - 1].score,
+          lessThanOrEqualTo(suggestions[i].score),
+        );
+      }
+    });
+
+    test('prefers fewer pigments when deltaE is comparable', () {
+      final engine = _testEngine();
+      // Target is exactly the yellow masstone: a 1-pigment recipe is
+      // available, so the penalty must rank it above any multi-pigment
+      // recipe that only marginally improves deltaE.
+      final yellowLab = engine.mix([
+        const MixComponent(pigmentId: 'yellow', weight: 1),
+      ]).lab;
+
+      final best = MixSolver(engine).solve(yellowLab);
+
+      expect(best, isNotNull);
+      expect(best!.components.length, 1);
+      expect(best.components.single.pigmentId, 'yellow');
+    });
+
+    test('suggestion exposes weighted opacity and translucency flag', () {
+      final glazeLike = _pigment(
+        'glaze',
+        'Glaze',
+        List.generate(41, (i) => 0.5),
+        opacity: 0.3,
+      );
+      final engine = ChromaEngine({'glaze': glazeLike});
+
+      final best = MixSolver(engine).solve(glazeLike.lab);
+
+      expect(best, isNotNull);
+      expect(best!.opacity, closeTo(0.3, 0.001));
+      expect(best.isTranslucent, isTrue);
+    });
+
+    test('opaque single-pigment suggestion is not flagged translucent', () {
+      final engine = _testEngine();
+      final best = MixSolver(engine).solve(
+        engine.mix([
+          const MixComponent(pigmentId: 'titanium_white', weight: 1),
+        ]).lab,
+      );
+
+      expect(best, isNotNull);
+      expect(best!.opacity, closeTo(0.9, 0.01));
+      expect(best.isTranslucent, isFalse);
     });
   });
 }

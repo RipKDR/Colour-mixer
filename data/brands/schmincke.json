@@ -1,0 +1,9 @@
+[
+  {"id": "schmincke_norma_ultramarine", "brand": "Schmincke", "line": "Norma Professional", "name": "Ultramarine Finest", "pigment_id": "ultramarine_blue", "pigment_codes": ["PB29"], "opacity": "semi-transparent", "price_usd": 18.50, "size_ml": 35},
+  {"id": "schmincke_norma_cadmium_red", "brand": "Schmincke", "line": "Norma Professional", "name": "Cadmium Red Light", "pigment_id": "cadmium_red_light", "pigment_codes": ["PR108"], "opacity": "opaque", "price_usd": 28.00, "size_ml": 35},
+  {"id": "schmincke_norma_hansa_yellow", "brand": "Schmincke", "line": "Norma Professional", "name": "Hansa Yellow Light", "pigment_id": "hansa_yellow", "pigment_codes": ["PY74"], "opacity": "opaque", "price_usd": 16.50, "size_ml": 35},
+  {"id": "schmincke_norma_titanium_white", "brand": "Schmincke", "line": "Norma Professional", "name": "Titanium White", "pigment_id": "titanium_white", "pigment_codes": ["PW6"], "opacity": "opaque", "price_usd": 14.00, "size_ml": 35},
+  {"id": "schmincke_norma_phthalo_green", "brand": "Schmincke", "line": "Norma Professional", "name": "Phthalo Green", "pigment_id": "phthalo_green", "pigment_codes": ["PG7"], "opacity": "transparent", "price_usd": 17.00, "size_ml": 35},
+  {"id": "schmincke_norma_quin_magenta", "brand": "Schmincke", "line": "Norma Professional", "name": "Magenta", "pigment_id": "quinacridone_magenta", "pigment_codes": ["PR122"], "opacity": "transparent", "price_usd": 19.00, "size_ml": 35},
+  {"id": "schmincke_norma_burnt_sienna", "brand": "Schmincke", "line": "Norma Professional", "name": "Burnt Sienna", "pigment_id": "burnt_sienna", "pigment_codes": ["PBr7"], "opacity": "semi-transparent", "price_usd": 15.50, "size_ml": 35}
+]

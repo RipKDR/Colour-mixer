@@ -9,6 +9,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../core/haptics.dart';
 import '../../core/theme.dart';
 import '../../engine/chroma_engine.dart';
+import '../../engine/photo_adapt.dart';
 import 'color_match.dart';
 
 /// Pick a reference photo and tap it to sample a target colour.
@@ -26,6 +27,7 @@ class _PhotoEyedropperScreenState extends ConsumerState<PhotoEyedropperScreen> {
   Color? _sampled;
   LabColor? _sampledLab;
   Offset? _tapLocal;
+  (double, double, double)? _whiteReference;
 
   Future<void> _pickImage(ImageSource source) async {
     final picker = ImagePicker();
@@ -83,13 +85,10 @@ class _PhotoEyedropperScreenState extends ConsumerState<PhotoEyedropperScreen> {
       }
     }
     final color = Color.fromARGB(255, r ~/ n, g ~/ n, b ~/ n);
+    final srgb = (color.r, color.g, color.b);
     setState(() {
       _sampled = color;
-      _sampledLab = Colorimetry.srgbToLab(
-        color.r,
-        color.g,
-        color.b,
-      );
+      _sampledLab = srgbToLabAdapted(srgb, whiteReference: _whiteReference);
       _tapLocal = local;
     });
     hapticSelect();
@@ -198,35 +197,79 @@ class _PhotoEyedropperScreenState extends ConsumerState<PhotoEyedropperScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               color: Theme.of(context).colorScheme.surface,
-              child: Row(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: _sampled,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: AppTheme.ochre.withValues(alpha: 0.4),
+                  Row(
+                    children: [
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: _sampled,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: AppTheme.ochre.withValues(alpha: 0.4),
+                          ),
+                        ),
                       ),
-                    ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'L ${lab.l.toStringAsFixed(1)}  '
+                          'a ${lab.a.toStringAsFixed(1)}  '
+                          'b ${lab.b.toStringAsFixed(1)}',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                      ),
+                      FilledButton.icon(
+                        onPressed: _applyTarget,
+                        icon: const Icon(Icons.gps_fixed),
+                        label: const Text('Use as target'),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppTheme.deepBlue,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      'L ${lab.l.toStringAsFixed(1)}  '
-                      'a ${lab.a.toStringAsFixed(1)}  '
-                      'b ${lab.b.toStringAsFixed(1)}',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                  ),
-                  FilledButton.icon(
-                    onPressed: _applyTarget,
-                    icon: const Icon(Icons.gps_fixed),
-                    label: const Text('Use as target'),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppTheme.deepBlue,
-                    ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      TextButton.icon(
+                        onPressed: () {
+                          final sampled = _sampled;
+                          if (sampled == null) return;
+                          setState(() {
+                            _whiteReference = (sampled.r, sampled.g, sampled.b);
+                            _sampledLab = srgbToLabAdapted(
+                              (sampled.r, sampled.g, sampled.b),
+                              whiteReference: _whiteReference,
+                            );
+                          });
+                        },
+                        icon: const Icon(Icons.wb_sunny_outlined, size: 18),
+                        label: Text(
+                          _whiteReference == null
+                              ? 'Set as white card'
+                              : 'White card set',
+                        ),
+                      ),
+                      if (_whiteReference != null)
+                        TextButton(
+                          onPressed: () {
+                            final sampled = _sampled;
+                            setState(() {
+                              _whiteReference = null;
+                              if (sampled != null) {
+                                _sampledLab = srgbToLabAdapted(
+                                  (sampled.r, sampled.g, sampled.b),
+                                );
+                              }
+                            });
+                          },
+                          child: const Text('Clear'),
+                        ),
+                    ],
                   ),
                 ],
               ),

@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme.dart';
 import '../../engine/chroma_engine.dart';
 import '../../engine/mix_session.dart';
+import 'learn_rank.dart';
 import '../recipes/database.dart';
 
 class Lesson {
@@ -100,12 +101,23 @@ class LearnScreen extends ConsumerWidget {
             'the same metric used in professional colour matching.',
           ),
           const SizedBox(height: 24),
-          ...lessons.map((lesson) {
+          ...rankLessons(
+            lessons,
+            {
+              for (final e in (progressAsync.valueOrNull ?? {}).entries)
+                e.key: LessonProgressSnapshot(
+                  completed: e.value.completed,
+                  bestDeltaE: e.value.bestDeltaE,
+                ),
+            },
+          ).map((ranked) {
+            final lesson = ranked.lesson;
             final progress = progressAsync.valueOrNull?[lesson.id];
             return _LessonCard(
               lesson: lesson,
               completed: progress?.completed ?? false,
               bestDeltaE: progress?.bestDeltaE,
+              isNext: ranked.isNext,
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -126,11 +138,13 @@ class _LessonCard extends StatelessWidget {
     required this.completed,
     required this.onTap,
     this.bestDeltaE,
+    this.isNext = false,
   });
 
   final Lesson lesson;
   final bool completed;
   final double? bestDeltaE;
+  final bool isNext;
   final VoidCallback onTap;
 
   @override
@@ -172,6 +186,17 @@ class _LessonCard extends StatelessWidget {
                     ),
                     Text(lesson.difficulty,
                         style: Theme.of(context).textTheme.labelSmall),
+                    if (isNext)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          'Up next',
+                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                color: AppTheme.deepBlue,
+                                fontWeight: FontWeight.bold,
+                              ),
+                        ),
+                      ),
                     if (bestDeltaE != null)
                       Text('Best ΔE: ${bestDeltaE!.toStringAsFixed(1)}'),
                   ],
