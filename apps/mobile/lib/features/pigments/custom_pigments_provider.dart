@@ -59,7 +59,7 @@ PigmentModel customPigmentToModel(CustomPigment row) {
     ];
   } on FormatException {
     rethrow;
-  } catch (e, st) {
+  } on Exception catch (e, st) {
     Error.throwWithStackTrace(
       FormatException(
         'custom pigment ${row.id}: invalid reflectanceJson ($e)',
