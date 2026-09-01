@@ -27,6 +27,8 @@ class _SwatchCaptureScreenState extends ConsumerState<SwatchCaptureScreen> {
   Color? _sampledColor;
   Offset? _tapLocal;
   SwatchComparison? _comparison;
+  (double, double, double)? _whiteReference;
+  (double, double, double)? _sampledSrgb;
 
   Future<void> _pickImage(ImageSource source) async {
     final picker = ImagePicker();
@@ -47,6 +49,7 @@ class _SwatchCaptureScreenState extends ConsumerState<SwatchCaptureScreen> {
       _sampledColor = null;
       _tapLocal = null;
       _comparison = null;
+      _sampledSrgb = null;
     });
   }
 
@@ -79,24 +82,34 @@ class _SwatchCaptureScreenState extends ConsumerState<SwatchCaptureScreen> {
     final py = ((local.dy - dy) / scale).floor();
     if (px < 0 || py < 0 || px >= image.width || py >= image.height) return;
 
-    final lab = sampleLabFromRgba(
+    final srgb = sampleSrgbFromRgba(
       pixels,
       image.width,
       image.height,
       px,
       py,
     );
-    final srgb = Colorimetry.labToSrgb(lab.l, lab.a, lab.b);
+    if (srgb == null) return;
+    final lab = sampleLabFromRgba(
+      pixels,
+      image.width,
+      image.height,
+      px,
+      py,
+      whiteReference: _whiteReference,
+    );
+    final display = Colorimetry.labToSrgb(lab.l, lab.a, lab.b);
     final color = Color.fromARGB(
       255,
-      (srgb.$1 * 255).round(),
-      (srgb.$2 * 255).round(),
-      (srgb.$3 * 255).round(),
+      (display.$1 * 255).round(),
+      (display.$2 * 255).round(),
+      (display.$3 * 255).round(),
     );
 
     setState(() {
       _sampledLab = lab;
       _sampledColor = color;
+      _sampledSrgb = srgb;
       _tapLocal = local;
       _comparison = SwatchComparison.compare(
         swatchLab: lab,
@@ -256,9 +269,34 @@ class _SwatchCaptureScreenState extends ConsumerState<SwatchCaptureScreen> {
                           Text(swatchVerdictLabel(comparison.verdict)),
                           const SizedBox(height: 6),
                           Text(
-                            'Assumes an sRGB photo under neutral light — '
-                            'camera colour management is not applied.',
+                            _whiteReference == null
+                                ? 'Photo treated as sRGB. Tap a gray/white card '
+                                    'in the photo, then “Set as white card” to '
+                                    'adapt to D65.'
+                                : 'White card set — sample is Bradford-adapted to D65.',
                             style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                          Row(
+                            children: [
+                              TextButton(
+                                onPressed: _sampledSrgb == null
+                                    ? null
+                                    : () => setState(() {
+                                          _whiteReference = _sampledSrgb;
+                                        }),
+                                child: Text(
+                                  _whiteReference == null
+                                      ? 'Set as white card'
+                                      : 'White card set',
+                                ),
+                              ),
+                              if (_whiteReference != null)
+                                TextButton(
+                                  onPressed: () =>
+                                      setState(() => _whiteReference = null),
+                                  child: const Text('Clear'),
+                                ),
+                            ],
                           ),
                         ],
                       ),

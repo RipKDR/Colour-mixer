@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import '../../engine/chroma_engine.dart';
+import '../../engine/photo_adapt.dart';
 import '../match/color_match.dart';
 
 /// How closely a photographed swatch matches the predicted mix.
@@ -66,8 +67,34 @@ class SwatchComparison {
 /// Averages a square neighbourhood in raw RGBA bytes and converts to Lab.
 ///
 /// [radius] is half-width in pixels (default 7 → 15×15 patch). Clamps at
-/// image edges. Assumes sRGB-encoded photo pixels, same as the eyedropper.
+/// image edges. Photo pixels are treated as gamma-encoded sRGB. Pass
+/// [whiteReference] (sRGB 0..1 of a gray/white card in the same photo) to
+/// Bradford-adapt the sample to D65.
 LabColor sampleLabFromRgba(
+  ByteData pixels,
+  int imageWidth,
+  int imageHeight,
+  int centerX,
+  int centerY, {
+  int radius = 7,
+  (double, double, double)? whiteReference,
+}) {
+  final srgb = sampleSrgbFromRgba(
+    pixels,
+    imageWidth,
+    imageHeight,
+    centerX,
+    centerY,
+    radius: radius,
+  );
+  if (srgb == null) {
+    return const LabColor(50, 0, 0);
+  }
+  return srgbToLabAdapted(srgb, whiteReference: whiteReference);
+}
+
+/// Averaged gamma-encoded sRGB (0..1), or null if the window is empty.
+(double, double, double)? sampleSrgbFromRgba(
   ByteData pixels,
   int imageWidth,
   int imageHeight,
@@ -86,12 +113,6 @@ LabColor sampleLabFromRgba(
       n++;
     }
   }
-  if (n == 0) {
-    return const LabColor(50, 0, 0);
-  }
-  return Colorimetry.srgbToLab(
-    r / n / 255.0,
-    g / n / 255.0,
-    b / n / 255.0,
-  );
+  if (n == 0) return null;
+  return (r / n / 255.0, g / n / 255.0, b / n / 255.0);
 }
