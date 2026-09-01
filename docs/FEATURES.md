@@ -17,7 +17,8 @@ Where every user-facing feature lives. Paths relative to repo root;
 | Feature | Screens / UI | Logic |
 |---------|--------------|-------|
 | Color Match (Lab target, live ΔE, presets) | `lib/features/match/color_match_screen.dart` | `lib/features/match/color_match.dart` (`colorTargetProvider`, `matchAnalysisProvider`) |
-| Photo eyedropper | `lib/features/match/photo_eyedropper_screen.dart` | `Colorimetry.srgbToLab` in `lib/engine/chroma_engine.dart` |
+| Photo eyedropper | `lib/features/match/photo_eyedropper_screen.dart` | `Colorimetry.srgbToLab` + optional Bradford white-card adapt (`lib/engine/photo_adapt.dart`) |
+| Swatch capture (photo vs mix) | `lib/features/swatch/swatch_capture_screen.dart` | `lib/features/swatch/swatch_compare.dart` |
 | Suggest recipe (solver + inventory filter + isolate) | suggestion sheet in `color_match_screen.dart` | `lib/engine/mix_solver.dart` |
 | Metamerism alerts | match screen + light booth | illuminant sweep in `color_match.dart` / `light_booth_screen.dart` |
 

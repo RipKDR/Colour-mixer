@@ -103,8 +103,9 @@ and never echo tokens.
 - **Brand data lives in two places**: `data/brands/` at repo root is the source of
   truth, mirrored into `apps/mobile/assets/data/brands/`. Keep them in sync when
   editing brand catalogs.
-- The photo eyedropper averages 3×3 pixels of gamma-encoded sRGB; no colour
-  management of camera input (assumes the photo is sRGB).
+- The photo eyedropper averages 3×3 pixels of gamma-encoded sRGB. Optional
+  Bradford chromatic adaptation to D65 is available via a white/gray card
+  sample (`lib/engine/photo_adapt.dart`); without it, the photo is assumed sRGB.
 
 ## Plausible next steps (in rough priority)
 
@@ -113,8 +114,7 @@ and never echo tokens.
 2. **iOS build** — needs a Mac with Xcode; validate `chroma_engine_ffi` podspec.
 3. **Golden tests** for palette shader and key screens (widget tests now cover
    Mix, Color Match, and Recipes empty state).
-4. **Measured pigment spectra** — replace synthetic curves in `data/pigments/`.
-5. **Camera colour management** for eyedropper/swatch capture (currently assumes sRGB).
+5. **Measured pigment spectra** — replace synthetic curves in `data/pigments/`.
 
 ## Authoritative references
 

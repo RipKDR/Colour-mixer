@@ -47,13 +47,13 @@ Status as of 2026-09-01 (`cursor/phase4-solver-swatch-tests-580b`). ✅ done · 
   opacity/translucency annotation on suggestions
 - ✅ Swatch capture (photograph painted swatch vs predicted mix, ΔE verdict)
 - ✅ Widget tests for Mix, Color Match, and Recipes screens
+- ✅ Camera white-card chromatic adaptation (Bradford CAT to D65)
+- ✅ Learn ranking (incomplete / weakest ΔE first, “Up next”)
 - ⬜ Android device build validated (`./tools/build_mobile.sh android` — needs cargo-ndk/NDK)
 - ⬜ iOS build validated (needs a Mac)
 
 ## Later / ideas (unscheduled)
 
 - Golden tests for screens; broader widget test coverage
-- Spaced repetition & difficulty curve for Learn
-- Camera colour management for eyedropper (currently assumes sRGB photos)
 - Custom pigment entry (user-measured spectra)
 - Cloud sync / recipe community sharing
