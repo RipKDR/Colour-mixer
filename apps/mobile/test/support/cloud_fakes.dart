@@ -50,7 +50,11 @@ class FakeCloudAuth implements CloudAuth {
 }
 
 class FakeCloudRecipes implements CloudRecipes {
+  FakeCloudRecipes({this.upsertDelay});
+
+  final Duration? upsertDelay;
   final Map<String, CloudRecipeDocument> docs = {};
+  int upsertCalls = 0;
 
   @override
   Future<String> upsertRecipe({
@@ -58,6 +62,9 @@ class FakeCloudRecipes implements CloudRecipes {
     required Map<String, dynamic> data,
     required String userId,
   }) async {
+    upsertCalls++;
+    final delay = upsertDelay;
+    if (delay != null) await Future<void>.delayed(delay);
     docs[documentId] = CloudRecipeDocument(
       id: documentId,
       data: Map<String, dynamic>.from(data),
@@ -84,9 +91,16 @@ class FakeRecipeStore implements RecipeStore {
   Future<List<MixRecipe>> getAllRecipes() async => List.of(rows);
 
   @override
-  Future<void> setRecipeCloudId(int id, String cloudId) async {
+  Future<void> setRecipeCloudId(
+    int id,
+    String cloudId, {
+    required String userId,
+  }) async {
     final index = rows.indexWhere((r) => r.id == id);
-    rows[index] = rows[index].copyWith(cloudId: Value(cloudId));
+    rows[index] = rows[index].copyWith(
+      cloudId: Value(cloudId),
+      cloudUserId: Value(userId),
+    );
   }
 
   @override
@@ -99,6 +113,13 @@ class FakeRecipeStore implements RecipeStore {
 
   @override
   Future<int> insertRecipe(MixRecipesCompanion recipe) async {
+    final cloudId = recipe.cloudId.present ? recipe.cloudId.value : null;
+    if (cloudId != null) {
+      final existing = await getRecipeByCloudId(cloudId);
+      if (existing != null) {
+        throw StateError('Duplicate cloudId $cloudId');
+      }
+    }
     final id = _nextId++;
     rows.add(
       MixRecipe(
@@ -110,7 +131,9 @@ class FakeRecipeStore implements RecipeStore {
         labA: recipe.labA.value,
         labB: recipe.labB.value,
         colorValue: recipe.colorValue.value,
-        cloudId: recipe.cloudId.present ? recipe.cloudId.value : null,
+        cloudId: cloudId,
+        cloudUserId:
+            recipe.cloudUserId.present ? recipe.cloudUserId.value : null,
         createdAt: DateTime.utc(2026, 1, 1),
       ),
     );

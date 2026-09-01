@@ -59,13 +59,14 @@ with six branches: `/mix`, `/canvas`, `/recipes`, `/learn`, `/inventory`,
 `schemaVersion = 4`. Tables:
 
 - **Recipes** — name, notes, pigment entries (JSON), Lab + ARGB snapshot, optional
-  `cloudId` (Appwrite document id for recipe sync).
+  `cloudId` (Appwrite document id) and `cloudUserId` (owning Appwrite user, so
+  a later sign-in as a different account does not reuse the previous document).
 - **InventoryItems** — pigmentId, brand, tube size ml, price, remaining fraction.
 - **LessonProgress** — per-lesson best ΔE for Learn challenges.
 - **CustomPigments** — user-entered paints (Lab + synthesized 41-sample reflectance JSON, opacity, tinting, binder).
 
 Migration strategy: `onUpgrade` adds v2 tables, then the v3 `CustomPigments`
-table, then the v4 `MixRecipes.cloudId` column. Any schema change requires a
+table, then the v4 `MixRecipes.cloudId` / `cloudUserId` columns. Any schema change requires a
 version bump + migration + `build_runner` regeneration.
 
 ## Data pipeline

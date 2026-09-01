@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:drift/drift.dart' show Value;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/appwrite/appwrite_client.dart';
 import '../match/color_match.dart';
@@ -9,7 +11,11 @@ import 'recipe_export.dart';
 
 abstract class RecipeStore {
   Future<List<MixRecipe>> getAllRecipes();
-  Future<void> setRecipeCloudId(int id, String cloudId);
+  Future<void> setRecipeCloudId(
+    int id,
+    String cloudId, {
+    required String userId,
+  });
   Future<MixRecipe?> getRecipeByCloudId(String cloudId);
   Future<int> insertRecipe(MixRecipesCompanion recipe);
 }
@@ -23,8 +29,12 @@ class DriftRecipeStore implements RecipeStore {
   Future<List<MixRecipe>> getAllRecipes() => db.getAllRecipes();
 
   @override
-  Future<void> setRecipeCloudId(int id, String cloudId) =>
-      db.setRecipeCloudId(id, cloudId);
+  Future<void> setRecipeCloudId(
+    int id,
+    String cloudId, {
+    required String userId,
+  }) =>
+      db.setRecipeCloudId(id, cloudId, userId: userId);
 
   @override
   Future<MixRecipe?> getRecipeByCloudId(String cloudId) =>
@@ -42,6 +52,31 @@ class RecipeSyncResult {
   final int pulled;
 }
 
+/// Skips overlapping runs so two Sync now taps cannot create duplicate docs.
+class RecipeSyncGate {
+  Future<void>? _inFlight;
+
+  bool get isBusy => _inFlight != null;
+
+  Future<T?> runExclusive<T>(Future<T> Function() action) async {
+    if (_inFlight != null) return null;
+    final done = Completer<void>();
+    _inFlight = done.future;
+    try {
+      return await action();
+    } finally {
+      _inFlight = null;
+      done.complete();
+    }
+  }
+}
+
+final recipeSyncGateProvider = Provider<RecipeSyncGate>((ref) => RecipeSyncGate());
+
+final recipeSyncInFlightProvider = StateProvider<bool>((ref) => false);
+
+final defaultRecipeSyncGate = RecipeSyncGate();
+
 Map<String, dynamic> recipeToDocumentData(MixRecipe recipe, String userId) {
   return {
     'name': recipe.name,
@@ -56,8 +91,12 @@ Map<String, dynamic> recipeToDocumentData(MixRecipe recipe, String userId) {
   };
 }
 
-MixRecipesCompanion documentToRecipeCompanion(CloudRecipeDocument doc) {
+MixRecipesCompanion documentToRecipeCompanion(
+  CloudRecipeDocument doc, {
+  required String userId,
+}) {
   final data = doc.data;
+  final owner = data['userId'] as String? ?? userId;
   final payload = data['payloadJson'] as String?;
   final parsed = payload != null ? parseRecipeJson(payload) : null;
   if (parsed != null) {
@@ -75,6 +114,7 @@ MixRecipesCompanion documentToRecipeCompanion(CloudRecipeDocument doc) {
       labB: parsed.labB,
       colorValue: parsed.colorValue,
       cloudId: Value(doc.id),
+      cloudUserId: Value(owner),
     );
   }
 
@@ -87,6 +127,7 @@ MixRecipesCompanion documentToRecipeCompanion(CloudRecipeDocument doc) {
     labB: _asDouble(data['labB'], 0),
     colorValue: _asInt(data['colorValue'], 0xFF808080),
     cloudId: Value(doc.id),
+    cloudUserId: Value(owner),
   );
 }
 
@@ -101,6 +142,17 @@ int _asInt(dynamic value, int fallback) {
   return fallback;
 }
 
+String _documentIdForPush(
+  MixRecipe recipe,
+  String userId,
+  String Function() newDocumentId,
+) {
+  if (recipe.cloudId != null && recipe.cloudUserId == userId) {
+    return recipe.cloudId!;
+  }
+  return newDocumentId();
+}
+
 Future<int> pushRecipes({
   required RecipeStore store,
   required CloudRecipes cloud,
@@ -110,15 +162,13 @@ Future<int> pushRecipes({
   final recipes = await store.getAllRecipes();
   var pushed = 0;
   for (final recipe in recipes) {
-    final documentId = recipe.cloudId ?? newDocumentId();
+    final documentId = _documentIdForPush(recipe, userId, newDocumentId);
     await cloud.upsertRecipe(
       documentId: documentId,
       data: recipeToDocumentData(recipe, userId),
       userId: userId,
     );
-    if (recipe.cloudId == null) {
-      await store.setRecipeCloudId(recipe.id, documentId);
-    }
+    await store.setRecipeCloudId(recipe.id, documentId, userId: userId);
     pushed++;
   }
   return pushed;
@@ -134,28 +184,33 @@ Future<int> pullRecipes({
   for (final doc in docs) {
     final existing = await store.getRecipeByCloudId(doc.id);
     if (existing != null) continue;
-    await store.insertRecipe(documentToRecipeCompanion(doc));
+    await store.insertRecipe(
+      documentToRecipeCompanion(doc, userId: userId),
+    );
     pulled++;
   }
   return pulled;
 }
 
-Future<RecipeSyncResult> syncRecipes({
+Future<RecipeSyncResult?> syncRecipes({
   required RecipeStore store,
   required CloudRecipes cloud,
   required String userId,
   required String Function() newDocumentId,
-}) async {
-  final pushed = await pushRecipes(
-    store: store,
-    cloud: cloud,
-    userId: userId,
-    newDocumentId: newDocumentId,
-  );
-  final pulled = await pullRecipes(
-    store: store,
-    cloud: cloud,
-    userId: userId,
-  );
-  return RecipeSyncResult(pushed: pushed, pulled: pulled);
+  RecipeSyncGate? gate,
+}) {
+  return (gate ?? defaultRecipeSyncGate).runExclusive(() async {
+    final pushed = await pushRecipes(
+      store: store,
+      cloud: cloud,
+      userId: userId,
+      newDocumentId: newDocumentId,
+    );
+    final pulled = await pullRecipes(
+      store: store,
+      cloud: cloud,
+      userId: userId,
+    );
+    return RecipeSyncResult(pushed: pushed, pulled: pulled);
+  });
 }

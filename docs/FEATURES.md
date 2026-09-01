@@ -43,7 +43,7 @@ Where every user-facing feature lives. Paths relative to repo root;
 | Feature | File |
 |---------|------|
 | Saved recipes (CRUD) | `lib/features/recipes/recipes_screen.dart`, `recipes_provider.dart` |
-| Database (Drift, schema v4) | `lib/features/recipes/database.dart` (+ committed `database.g.dart`); `MixRecipes.cloudId` for Appwrite sync |
+| Database (Drift, schema v4) | `lib/features/recipes/database.dart` (+ committed `database.g.dart`); `MixRecipes.cloudId` + `cloudUserId` for Appwrite sync |
 | Share text / PDF export / JSON export | `lib/features/recipes/recipe_export.dart` (`recipeToJson` / `recipeToJsonMap`) + handlers in `recipes_screen.dart` |
 | JSON import (`chromastudio-recipe-v1`) | `lib/features/recipes/recipe_import.dart`; parser `parseRecipeJson` in `lib/features/match/color_match.dart` |
 | Cloud recipe sync (explicit Push/Pull) | `lib/features/recipes/recipe_sync.dart`; Recipes AppBar **Sync now** when signed in |

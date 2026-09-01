@@ -34,6 +34,26 @@ abstract class CloudRecipes {
   Future<List<CloudRecipeDocument>> listOwned(String userId);
 }
 
+const kCloudRecipePageSize = 100;
+
+/// Walks cursor-based pages until a short (or empty) page.
+Future<List<T>> collectCursorPages<T>({
+  required int pageSize,
+  required Future<List<T>> Function({String? cursorAfter}) fetchPage,
+  required String Function(T item) idOf,
+}) async {
+  final all = <T>[];
+  String? cursor;
+  while (true) {
+    final page = await fetchPage(cursorAfter: cursor);
+    if (page.isEmpty) break;
+    all.addAll(page);
+    if (page.length < pageSize) break;
+    cursor = idOf(page.last);
+  }
+  return all;
+}
+
 final appwriteConfigProvider = Provider<AppwriteConfig>(
   (ref) => AppwriteConfig.fromEnvironment(),
 );
@@ -133,21 +153,29 @@ class AppwriteCloudRecipes implements CloudRecipes {
   }
 
   @override
-  Future<List<CloudRecipeDocument>> listOwned(String userId) async {
-    final result = await _databases.listDocuments(
-      databaseId: _config.databaseId,
-      collectionId: _config.collectionId,
-      queries: [
-        Query.equal('userId', userId),
-        Query.limit(100),
-      ],
+  Future<List<CloudRecipeDocument>> listOwned(String userId) {
+    return collectCursorPages(
+      pageSize: kCloudRecipePageSize,
+      idOf: (doc) => doc.id,
+      fetchPage: ({cursorAfter}) async {
+        final queries = <String>[
+          Query.equal('userId', userId),
+          Query.limit(kCloudRecipePageSize),
+          if (cursorAfter != null) Query.cursorAfter(cursorAfter),
+        ];
+        final result = await _databases.listDocuments(
+          databaseId: _config.databaseId,
+          collectionId: _config.collectionId,
+          queries: queries,
+        );
+        return [
+          for (final doc in result.documents)
+            CloudRecipeDocument(
+              id: doc.$id,
+              data: Map<String, dynamic>.from(doc.data),
+            ),
+        ];
+      },
     );
-    return [
-      for (final doc in result.documents)
-        CloudRecipeDocument(
-          id: doc.$id,
-          data: Map<String, dynamic>.from(doc.data),
-        ),
-    ];
   }
 }

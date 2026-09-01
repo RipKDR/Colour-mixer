@@ -23,6 +23,7 @@ class RecipesScreen extends ConsumerWidget {
     final recipesAsync = ref.watch(recipesProvider);
     final showSync = ref.watch(appwriteConfigProvider).isConfigured &&
         ref.watch(cloudUserProvider).asData?.value != null;
+    final syncing = ref.watch(recipeSyncInFlightProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -30,9 +31,15 @@ class RecipesScreen extends ConsumerWidget {
         actions: [
           if (showSync)
             IconButton(
-              icon: const Icon(Icons.cloud_sync_outlined),
-              tooltip: 'Sync now',
-              onPressed: () => _syncNow(context, ref),
+              icon: syncing
+                  ? const SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.cloud_sync_outlined),
+              tooltip: syncing ? 'Syncing…' : 'Sync now',
+              onPressed: syncing ? null : () => _syncNow(context, ref),
             ),
           IconButton(
             icon: const Icon(Icons.upload_file_outlined),
@@ -152,17 +159,21 @@ class RecipesScreen extends ConsumerWidget {
   }
 
   Future<void> _syncNow(BuildContext context, WidgetRef ref) async {
-    final cloud = ref.read(cloudRecipesProvider);
-    final user = await ref.read(cloudUserProvider.future);
-    if (cloud == null || user == null) return;
-
+    if (ref.read(recipeSyncInFlightProvider)) return;
+    ref.read(recipeSyncInFlightProvider.notifier).state = true;
     try {
+      final cloud = ref.read(cloudRecipesProvider);
+      final user = await ref.read(cloudUserProvider.future);
+      if (cloud == null || user == null) return;
+
       final result = await syncRecipes(
         store: DriftRecipeStore(ref.read(databaseProvider)),
         cloud: cloud,
         userId: user.id,
         newDocumentId: () => ID.unique(),
+        gate: ref.read(recipeSyncGateProvider),
       );
+      if (result == null) return;
       refreshRecipes(ref);
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -177,6 +188,8 @@ class RecipesScreen extends ConsumerWidget {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Sync failed: $e')),
       );
+    } finally {
+      ref.read(recipeSyncInFlightProvider.notifier).state = false;
     }
   }
 

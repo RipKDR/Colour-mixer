@@ -18,6 +18,7 @@ class MixRecipes extends Table {
   RealColumn get labB => real()();
   IntColumn get colorValue => integer()();
   TextColumn get cloudId => text().nullable()();
+  TextColumn get cloudUserId => text().nullable()();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }
 
@@ -96,12 +97,19 @@ class AppDatabase extends _$AppDatabase {
           }
           if (from < 4) {
             await m.addColumn(mixRecipes, mixRecipes.cloudId);
+            await m.addColumn(mixRecipes, mixRecipes.cloudUserId);
           }
         },
         beforeOpen: (details) async {
           // SQLite ships with foreign keys OFF; without this, the cascade
           // declared on RecipeTags.recipeId is silently ignored.
           await customStatement('PRAGMA foreign_keys = ON');
+          // Partial unique index: ALTER TABLE cannot add UNIQUE on a new
+          // nullable column, and multiple NULLs must remain allowed.
+          await customStatement(
+            'CREATE UNIQUE INDEX IF NOT EXISTS mix_recipes_cloud_id_unique '
+            'ON mix_recipes(cloud_id) WHERE cloud_id IS NOT NULL',
+          );
         },
       );
 
@@ -118,8 +126,9 @@ class AppDatabase extends _$AppDatabase {
   Future<bool> deleteRecipe(int id) =>
       (delete(mixRecipes)..where((t) => t.id.equals(id))).go().then((c) => c > 0);
 
-  /// Copies local fields only — [MixRecipe.cloudId] is omitted so the duplicate
-  /// is a new local recipe until the next cloud push.
+  /// Copies local fields only — [MixRecipe.cloudId] / [MixRecipe.cloudUserId]
+  /// are omitted so the duplicate is a new local recipe until the next cloud
+  /// push.
   Future<int> duplicateRecipe(MixRecipe recipe) => insertRecipe(
         MixRecipesCompanion.insert(
           name: '${recipe.name} (copy)',
@@ -132,9 +141,16 @@ class AppDatabase extends _$AppDatabase {
         ),
       );
 
-  Future<void> setRecipeCloudId(int id, String cloudId) {
+  Future<void> setRecipeCloudId(
+    int id,
+    String cloudId, {
+    required String userId,
+  }) {
     return (update(mixRecipes)..where((t) => t.id.equals(id))).write(
-      MixRecipesCompanion(cloudId: Value(cloudId)),
+      MixRecipesCompanion(
+        cloudId: Value(cloudId),
+        cloudUserId: Value(userId),
+      ),
     );
   }
 

@@ -9,7 +9,11 @@ import 'package:chromastudio/features/recipes/recipe_sync.dart';
 
 import 'support/cloud_fakes.dart';
 
-MixRecipe _sample({int id = 1, String? cloudId}) {
+MixRecipe _sample({
+  int id = 1,
+  String? cloudId,
+  String? cloudUserId,
+}) {
   return MixRecipe(
     id: id,
     name: 'Sunset',
@@ -23,6 +27,7 @@ MixRecipe _sample({int id = 1, String? cloudId}) {
     labB: 20,
     colorValue: 0xFFCC8844,
     cloudId: cloudId,
+    cloudUserId: cloudUserId,
     createdAt: DateTime.utc(2026, 1, 1),
   );
 }
@@ -45,11 +50,13 @@ void main() {
 
       final companion = documentToRecipeCompanion(
         CloudRecipeDocument(id: 'doc-1', data: data),
+        userId: 'user-1',
       );
       expect(companion.name.value, 'Sunset');
       expect(companion.notes.value, 'warm');
       expect(companion.labL.value, 50);
       expect(companion.cloudId.value, 'doc-1');
+      expect(companion.cloudUserId.value, 'user-1');
     });
 
     test('falls back to field attributes when payloadJson is missing', () {
@@ -66,10 +73,12 @@ void main() {
             'colorValue': 0xFF112233,
           },
         ),
+        userId: 'user-1',
       );
       expect(companion.name.value, 'Field only');
       expect(companion.labL.value, 40);
       expect(companion.cloudId.value, 'doc-2');
+      expect(companion.cloudUserId.value, 'user-1');
     });
   });
 
@@ -87,6 +96,7 @@ void main() {
       );
       expect(pushed, 1);
       expect(store.rows.single.cloudId, 'cloud-1');
+      expect(store.rows.single.cloudUserId, 'user-1');
       expect(cloud.docs['cloud-1']?.data['name'], 'Sunset');
 
       final remote = recipeToDocumentData(_sample(id: 99), 'user-1');
@@ -117,18 +127,124 @@ void main() {
       expect(store.rows.length, 2);
     });
 
+    test('push rebinds cloudId when the signed-in user changes', () async {
+      final store = FakeRecipeStore([
+        _sample(cloudId: 'old-user-doc', cloudUserId: 'user-a'),
+      ]);
+      final cloud = FakeCloudRecipes();
+
+      await pushRecipes(
+        store: store,
+        cloud: cloud,
+        userId: 'user-b',
+        newDocumentId: () => 'new-user-doc',
+      );
+
+      expect(store.rows.single.cloudId, 'new-user-doc');
+      expect(store.rows.single.cloudUserId, 'user-b');
+      expect(cloud.docs.containsKey('old-user-doc'), isFalse);
+      expect(cloud.docs['new-user-doc']?.data['userId'], 'user-b');
+    });
+
+    test('push reuses cloudId for the same owner', () async {
+      final store = FakeRecipeStore([
+        _sample(cloudId: 'doc-1', cloudUserId: 'user-1'),
+      ]);
+      final cloud = FakeCloudRecipes();
+      var minted = 0;
+
+      await pushRecipes(
+        store: store,
+        cloud: cloud,
+        userId: 'user-1',
+        newDocumentId: () {
+          minted++;
+          return 'should-not-mint';
+        },
+      );
+
+      expect(minted, 0);
+      expect(store.rows.single.cloudId, 'doc-1');
+      expect(cloud.docs.keys, ['doc-1']);
+    });
+
     test('syncRecipes pushes then pulls', () async {
       final store = FakeRecipeStore([_sample()]);
       final cloud = FakeCloudRecipes();
+      final gate = RecipeSyncGate();
       final result = await syncRecipes(
         store: store,
         cloud: cloud,
         userId: 'user-1',
         newDocumentId: () => 'id-1',
+        gate: gate,
       );
-      expect(result.pushed, 1);
+      expect(result, isNotNull);
+      expect(result!.pushed, 1);
       expect(result.pulled, 0);
       expect(store.rows.single.cloudId, 'id-1');
+    });
+
+    test('overlapping syncRecipes skips the second run', () async {
+      final store = FakeRecipeStore([_sample()]);
+      final cloud = FakeCloudRecipes(
+        upsertDelay: const Duration(milliseconds: 80),
+      );
+      final gate = RecipeSyncGate();
+
+      final first = syncRecipes(
+        store: store,
+        cloud: cloud,
+        userId: 'user-1',
+        newDocumentId: () => 'id-1',
+        gate: gate,
+      );
+      final second = syncRecipes(
+        store: store,
+        cloud: cloud,
+        userId: 'user-1',
+        newDocumentId: () => 'id-2',
+        gate: gate,
+      );
+
+      final results = await Future.wait([first, second]);
+      expect(results.whereType<RecipeSyncResult>().length, 1);
+      expect(results.where((r) => r == null).length, 1);
+      expect(cloud.upsertCalls, 1);
+      expect(store.rows.single.cloudId, 'id-1');
+    });
+  });
+
+  group('collectCursorPages', () {
+    test('walks full pages then a short page', () async {
+      final pages = [
+        ['a', 'b'],
+        ['c', 'd'],
+        ['e'],
+      ];
+      var calls = 0;
+      final cursors = <String?>[];
+
+      final all = await collectCursorPages<String>(
+        pageSize: 2,
+        idOf: (id) => id,
+        fetchPage: ({cursorAfter}) async {
+          cursors.add(cursorAfter);
+          return pages[calls++];
+        },
+      );
+
+      expect(all, ['a', 'b', 'c', 'd', 'e']);
+      expect(cursors, [null, 'b', 'd']);
+    });
+
+    test('stops on an empty first page', () async {
+      final all = await collectCursorPages<String>(
+        pageSize: 2,
+        idOf: (id) => id,
+        fetchPage: ({cursorAfter}) async => [],
+      );
+      expect(all, isEmpty);
     });
   });
 }
