@@ -52,7 +52,7 @@ Where every user-facing feature lives. Paths relative to repo root;
 
 | Feature | File |
 |---------|------|
-| Mixing challenges with ΔE scoring | `lib/features/learn/learn_screen.dart` (progress via `LessonProgress` table) |
+| Mixing challenges with ΔE scoring | `lib/features/learn/learn_screen.dart` (progress via `LessonProgress` table; ranking in `learn_rank.dart`) |
 
 ## App infrastructure
 
