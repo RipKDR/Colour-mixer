@@ -2,7 +2,7 @@ use crate::colorimetry::{
     mix_spectra_ks, reflectance_to_ks, ks_to_reflectance, spectrum_to_lab, spectrum_to_srgb,
     SPECTRUM_SAMPLES,
 };
-use crate::pigment::{Pigment, PigmentDatabase, PigmentError};
+use crate::pigment::{PigmentDatabase, PigmentError};
 use thiserror::Error;
 
 #[derive(Debug, Clone)]
@@ -123,7 +123,6 @@ impl Mixer {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::pigment::PigmentData;
 
     fn test_db() -> PigmentDatabase {
         let json = include_str!("../../../data/pigments/all_pigments.json");

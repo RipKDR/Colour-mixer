@@ -14,6 +14,7 @@ abstract class EngineBackend {
   Future<void> init();
   List<PigmentModel> listPigments();
   MixResult mix(List<MixComponent> components);
+  bool get hasFullSpectra;
 }
 
 class DartEngineBackend implements EngineBackend {
@@ -38,6 +39,9 @@ class DartEngineBackend implements EngineBackend {
 
   @override
   MixResult mix(List<MixComponent> components) => _inner.mix(components);
+
+  @override
+  bool get hasFullSpectra => true;
 }
 
 final class NativePigmentInfo extends Struct {
@@ -86,6 +90,8 @@ final class NativeMixResult extends Struct {
   external double undertoneG;
   @Double()
   external double undertoneB;
+  @Array(Colorimetry.spectrumSamples)
+  external Array<Double> reflectance;
 }
 
 class NativeEngineBackend implements EngineBackend {
@@ -95,6 +101,7 @@ class NativeEngineBackend implements EngineBackend {
   late final int Function() _init;
   late final int Function() _pigmentCount;
   late final int Function(int, Pointer<NativePigmentInfo>) _getPigment;
+  late final int Function(int, Pointer<Double>, int) _getPigmentReflectance;
   late final void Function(Pointer<Char>) _freeString;
   late final int Function(
     Pointer<Pointer<Char>>,
@@ -126,6 +133,9 @@ class NativeEngineBackend implements EngineBackend {
     _getPigment = _lib.lookupFunction<
         Int32 Function(Uint32, Pointer<NativePigmentInfo>),
         int Function(int, Pointer<NativePigmentInfo>)>('chroma_get_pigment');
+    _getPigmentReflectance = _lib.lookupFunction<
+        Int32 Function(Uint32, Pointer<Double>, Uint32),
+        int Function(int, Pointer<Double>, int)>('chroma_get_pigment_reflectance');
     _freeString = _lib.lookupFunction<Void Function(Pointer<Char>),
         void Function(Pointer<Char>)>('chroma_free_string');
     _mixFn = _lib.lookupFunction<
@@ -148,6 +158,7 @@ class NativeEngineBackend implements EngineBackend {
   List<PigmentModel> _readPigments() {
     final count = _pigmentCount();
     final out = calloc<NativePigmentInfo>();
+    final reflectanceBuf = calloc<Double>(Colorimetry.spectrumSamples);
     final list = <PigmentModel>[];
     try {
       for (var i = 0; i < count; i++) {
@@ -157,11 +168,24 @@ class NativeEngineBackend implements EngineBackend {
         final name = info.name.cast<Utf8>().toDartString();
         _freeString(info.id);
         _freeString(info.name);
+
+        final reflectance = List<double>.filled(Colorimetry.spectrumSamples, 0);
+        if (_getPigmentReflectance(
+              i,
+              reflectanceBuf,
+              Colorimetry.spectrumSamples,
+            ) ==
+            0) {
+          for (var j = 0; j < Colorimetry.spectrumSamples; j++) {
+            reflectance[j] = reflectanceBuf[j];
+          }
+        }
+
         list.add(PigmentModel(
           id: id,
           name: name,
           pigmentCodes: const [],
-          reflectance: List.filled(Colorimetry.spectrumSamples, 0),
+          reflectance: reflectance,
           opacity: info.opacity,
           tintingStrength: info.tintingStrength,
           toxicity: 'unknown',
@@ -172,9 +196,17 @@ class NativeEngineBackend implements EngineBackend {
       }
     } finally {
       calloc.free(out);
+      calloc.free(reflectanceBuf);
     }
     list.sort((a, b) => a.name.compareTo(b.name));
     return list;
+  }
+
+  List<double> _arrayToList(Array<Double> array) {
+    return List.generate(
+      Colorimetry.spectrumSamples,
+      (i) => array[i],
+    );
   }
 
   Color _toColor(double r, double g, double b) => Color.fromARGB(
@@ -186,6 +218,9 @@ class NativeEngineBackend implements EngineBackend {
 
   @override
   List<PigmentModel> listPigments() => _pigments ?? [];
+
+  @override
+  bool get hasFullSpectra => true;
 
   @override
   MixResult mix(List<MixComponent> components) {
@@ -214,13 +249,12 @@ class NativeEngineBackend implements EngineBackend {
         throw StateError('Native mix failed');
       }
       final r = out.ref;
-      final empty = List<double>.filled(Colorimetry.spectrumSamples, 0.5);
       return MixResult(
         lab: LabColor(r.labL, r.labA, r.labB),
         color: _toColor(r.srgbR, r.srgbG, r.srgbB),
         massTone: _toColor(r.massR, r.massG, r.massB),
         undertone: _toColor(r.undertoneR, r.undertoneG, r.undertoneB),
-        reflectance: empty,
+        reflectance: _arrayToList(r.reflectance),
       );
     } finally {
       for (var i = 0; i < count; i++) {
@@ -236,7 +270,7 @@ class NativeEngineBackend implements EngineBackend {
 Future<EngineBackend> createEngineBackend() async {
   final native = await NativeEngineBackend.tryLoad();
   if (native != null) {
-    debugPrint('ChromaStudio: native Rust engine loaded');
+    debugPrint('ChromaStudio: native Rust engine loaded (full spectra)');
     return native;
   }
   debugPrint('ChromaStudio: using Dart engine');

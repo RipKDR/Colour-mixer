@@ -67,6 +67,7 @@ class RecipesScreen extends ConsumerWidget {
                 onLoad: () => _loadRecipe(context, ref, recipe),
                 onShare: () => _shareRecipe(recipe),
                 onExportPdf: () => _exportRecipePdf(recipe),
+                onExportJson: () => _exportRecipeJson(recipe),
               );
             },
           );
@@ -173,6 +174,11 @@ class RecipesScreen extends ConsumerWidget {
     final names = await loadPigmentNameMap();
     await exportRecipePdf(recipe, pigmentNames: names);
   }
+
+  Future<void> _exportRecipeJson(MixRecipe recipe) async {
+    final names = await loadPigmentNameMap();
+    await exportRecipeJson(recipe, pigmentNames: names);
+  }
 }
 
 int _colorToInt(Color color) {
@@ -191,6 +197,7 @@ class _RecipeCard extends StatelessWidget {
     required this.onLoad,
     required this.onShare,
     required this.onExportPdf,
+    required this.onExportJson,
   });
 
   final MixRecipe recipe;
@@ -199,6 +206,7 @@ class _RecipeCard extends StatelessWidget {
   final VoidCallback onLoad;
   final VoidCallback onShare;
   final VoidCallback onExportPdf;
+  final VoidCallback onExportJson;
 
   @override
   Widget build(BuildContext context) {
@@ -223,6 +231,8 @@ class _RecipeCard extends StatelessWidget {
                 onShare();
               case 'pdf':
                 onExportPdf();
+              case 'json':
+                onExportJson();
               case 'duplicate':
                 onDuplicate();
               case 'delete':
@@ -232,6 +242,7 @@ class _RecipeCard extends StatelessWidget {
           itemBuilder: (_) => const [
             PopupMenuItem(value: 'share', child: Text('Share text')),
             PopupMenuItem(value: 'pdf', child: Text('Export PDF')),
+            PopupMenuItem(value: 'json', child: Text('Export JSON')),
             PopupMenuItem(value: 'duplicate', child: Text('Duplicate')),
             PopupMenuItem(value: 'delete', child: Text('Delete')),
           ],

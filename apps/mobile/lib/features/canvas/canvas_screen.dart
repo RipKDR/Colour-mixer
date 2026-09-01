@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/haptics.dart';
 import '../../engine/mix_session.dart';
 
 class StrokePoint {
@@ -145,10 +146,13 @@ class CanvasScreen extends ConsumerWidget {
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   return GestureDetector(
-                    onPanStart: (d) => canvasNotifier.startStroke(
-                      d.localPosition,
-                      mixColor,
-                    ),
+                    onPanStart: (d) {
+                      hapticLight();
+                      canvasNotifier.startStroke(
+                        d.localPosition,
+                        mixColor,
+                      );
+                    },
                     onPanUpdate: (d) =>
                         canvasNotifier.extendStroke(d.localPosition),
                     onPanEnd: (_) => canvasNotifier.endStroke(),

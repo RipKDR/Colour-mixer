@@ -1,5 +1,5 @@
 name: chroma_engine_ffi
-description: FFI loader helpers for the ChromaStudio Rust spectral engine on mobile
+description: FFI plugin for the ChromaStudio Rust spectral mixing engine
 version: 0.1.0
 publish_to: 'none'
 
@@ -8,3 +8,11 @@ environment:
 
 dependencies:
   ffi: ^2.1.3
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        ffiPlugin: true
+      ios:
+        ffiPlugin: true

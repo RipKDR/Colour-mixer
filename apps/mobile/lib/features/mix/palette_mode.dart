@@ -1,9 +1,9 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/haptics.dart';
 import '../../core/theme.dart';
 import '../../engine/chroma_engine.dart';
 import '../../engine/mix_session.dart';
@@ -108,7 +108,7 @@ class _PaletteModeScreenState extends ConsumerState<PaletteModeScreen> {
 
   void _onPanEnd(DragEndDetails details) {
     if (_isMixing) {
-      HapticFeedback.mediumImpact();
+      hapticMedium();
       _pushUndo();
       _syncToSession();
     }
@@ -125,7 +125,7 @@ class _PaletteModeScreenState extends ConsumerState<PaletteModeScreen> {
         final b = _blobs[j];
         final dist = (a.position - b.position).distance;
         if (dist < (a.radius + b.radius) * 0.7) {
-          HapticFeedback.lightImpact();
+          hapticLight();
           final merged = PaintBlob(
             pigmentId: a.pigmentId,
             position: Offset(
@@ -185,7 +185,7 @@ class _PaletteModeScreenState extends ConsumerState<PaletteModeScreen> {
                       onPanUpdate: (d) =>
                           _onPanUpdate(d, constraints.biggest),
                       onPanEnd: _onPanEnd,
-                      onPanStart: (_) => HapticFeedback.lightImpact(),
+                      onPanStart: (_) => hapticLight(),
                       child: CustomPaint(
                         size: Size(constraints.maxWidth, constraints.maxHeight),
                         painter: _PalettePainter(
@@ -348,7 +348,7 @@ class _PigmentShelf extends StatelessWidget {
           final p = pigments[i];
           return GestureDetector(
             onTap: () {
-              HapticFeedback.lightImpact();
+              hapticLight();
               onAdd(p.id);
             },
             child: Tooltip(

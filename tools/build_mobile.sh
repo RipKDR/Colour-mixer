@@ -4,7 +4,8 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 ENGINE="$ROOT/packages/chroma_engine"
-OUT="$ROOT/packages/chroma_engine_ffi/prebuilt"
+PLUGIN="$ROOT/packages/chroma_engine_ffi"
+OUT="$PLUGIN/prebuilt"
 
 TARGET="${1:-}"
 
@@ -15,24 +16,29 @@ build_android() {
     echo "Install cargo-ndk: cargo install cargo-ndk"
     exit 1
   fi
+  rustup target add aarch64-linux-android armv7-linux-androideabi x86_64-linux-android 2>/dev/null || true
   for abi in arm64-v8a armeabi-v7a x86_64; do
     echo "Building Android $abi..."
-    cargo ndk -t "$abi" -o "$OUT/android/jniLibs" build --release
+    cargo ndk -t "$abi" -o "$PLUGIN/android/src/main/jniLibs" build --release \
+      --manifest-path "$ENGINE/Cargo.toml"
   done
-  echo "Android libs in $OUT/android/jniLibs"
+  echo "Android libs in $PLUGIN/android/src/main/jniLibs"
 }
 
 build_ios() {
   echo "Building iOS device (aarch64-apple-ios)..."
   rustup target add aarch64-apple-ios x86_64-apple-ios 2>/dev/null || true
-  cargo build --release --target aarch64-apple-ios
-  cargo build --release --target x86_64-apple-ios
-  echo "iOS libs in $ENGINE/target/aarch64-apple-ios/release/"
-  echo "Link libchroma_engine.a in Xcode for device/simulator."
+  cargo build --release --target aarch64-apple-ios --manifest-path "$ENGINE/Cargo.toml"
+  mkdir -p "$PLUGIN/ios/Frameworks"
+  cp "$ENGINE/target/aarch64-apple-ios/release/libchroma_engine.a" \
+    "$PLUGIN/ios/Frameworks/libchroma_engine.a"
+  echo "iOS static lib: $PLUGIN/ios/Frameworks/libchroma_engine.a"
 }
 
 build_linux() {
   "$ROOT/tools/build_engine.sh"
+  mkdir -p "$PLUGIN/linux"
+  cp "$ENGINE/target/release/libchroma_engine.so" "$PLUGIN/linux/libchroma_engine.so" 2>/dev/null || true
 }
 
 case "$TARGET" in

@@ -43,13 +43,20 @@ class ChromaEngineFfi {
           ChromaLibraryKind.file => DynamicLibrary.open(target.path!),
           ChromaLibraryKind.process => DynamicLibrary.process(),
         };
-        lib.lookupFunction<Uint32 Function(), int Function()>('chroma_init');
-        return lib;
+        if (_hasRequiredSymbols(lib)) return lib;
       } catch (_) {
         continue;
       }
     }
     return null;
+  }
+
+  static bool _hasRequiredSymbols(DynamicLibrary lib) {
+    lib.lookupFunction<Uint32 Function(), int Function()>('chroma_init');
+    lib.lookupFunction<
+        Int32 Function(Uint32, Pointer<Double>, Uint32),
+        int Function(int, Pointer<Double>, int)>('chroma_get_pigment_reflectance');
+    return true;
   }
 }
 

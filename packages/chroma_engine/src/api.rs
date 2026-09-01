@@ -1,28 +1,26 @@
-use crate::colorimetry::ciede2000;
+use crate::colorimetry::{ciede2000, SPECTRUM_SAMPLES};
 use crate::mix::{MixComponent, MixedColor, Mixer};
 use crate::pigment::{Pigment, PigmentDatabase};
 use crate::units::{format_ratios, QuantityUnit};
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
 use std::slice;
+use std::sync::OnceLock;
 
-static mut ENGINE: Option<EngineState> = None;
+static ENGINE: OnceLock<EngineState> = OnceLock::new();
 
 struct EngineState {
     mixer: Mixer,
 }
 
-fn engine() -> &'static mut EngineState {
-    unsafe {
-        if ENGINE.is_none() {
-            let json = include_str!("../../../data/pigments/all_pigments.json");
-            let db = PigmentDatabase::load_from_json(json).expect("Failed to load pigments");
-            ENGINE = Some(EngineState {
-                mixer: Mixer::new(db),
-            });
+fn engine() -> &'static EngineState {
+    ENGINE.get_or_init(|| {
+        let json = include_str!("../../../data/pigments/all_pigments.json");
+        let db = PigmentDatabase::load_from_json(json).expect("Failed to load pigments");
+        EngineState {
+            mixer: Mixer::new(db),
         }
-        ENGINE.as_mut().unwrap()
-    }
+    })
 }
 
 #[repr(C)]
@@ -53,6 +51,7 @@ pub struct CMixResult {
     pub undertone_r: f64,
     pub undertone_g: f64,
     pub undertone_b: f64,
+    pub reflectance: [f64; SPECTRUM_SAMPLES],
 }
 
 fn to_c_string(s: &str) -> *mut c_char {
@@ -90,6 +89,26 @@ pub extern "C" fn chroma_get_pigment(index: u32, out: *mut CPigmentInfo) -> i32 
         (*out).srgb_r = p.srgb.0;
         (*out).srgb_g = p.srgb.1;
         (*out).srgb_b = p.srgb.2;
+    }
+    0
+}
+
+#[no_mangle]
+pub extern "C" fn chroma_get_pigment_reflectance(
+    index: u32,
+    out: *mut f64,
+    count: u32,
+) -> i32 {
+    if out.is_null() || count as usize != SPECTRUM_SAMPLES {
+        return -1;
+    }
+    let pigments = engine().mixer.database().all();
+    if index as usize >= pigments.len() {
+        return -1;
+    }
+    let p = pigments[index as usize];
+    unsafe {
+        std::ptr::copy_nonoverlapping(p.reflectance.as_ptr(), out, SPECTRUM_SAMPLES);
     }
     0
 }
@@ -143,6 +162,7 @@ pub extern "C" fn chroma_mix(
                     undertone_r: result.undertone.0,
                     undertone_g: result.undertone.1,
                     undertone_b: result.undertone.2,
+                    reflectance: result.reflectance,
                 };
             }
             0
@@ -222,4 +242,17 @@ pub fn format_mix_ratios(weights: &[f64], unit: QuantityUnit) -> Vec<(String, St
         .into_iter()
         .map(|r| (r.parts, r.percent, r.grams))
         .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn engine_initializes_once() {
+        let a = chroma_init();
+        let b = chroma_init();
+        assert_eq!(a, 20);
+        assert_eq!(b, 20);
+    }
 }

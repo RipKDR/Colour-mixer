@@ -73,8 +73,13 @@ class SettingsScreen extends ConsumerWidget {
             builder: (context, ref, _) {
               final backend = ref.watch(engineBackendProvider);
               final label = backend.when(
-                data: (b) =>
-                    b is NativeEngineBackend ? 'Rust (native FFI)' : 'Dart',
+                data: (b) {
+                  if (b is NativeEngineBackend) {
+                    final spectra = b.hasFullSpectra ? 'full spectra' : 'Lab only';
+                    return 'Rust (native FFI · $spectra)';
+                  }
+                  return 'Dart (full spectra)';
+                },
                 loading: () => 'Loading…',
                 error: (_, __) => 'Dart (fallback)',
               );

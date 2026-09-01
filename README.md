@@ -65,8 +65,16 @@ Settings → Mixing engine shows **Rust (native FFI)** when the `.so` is loaded,
 - **Virtual light booth** — Preview current mix under D65, D50, incandescent, fluorescent, and LED illuminants with ΔE vs reference
 - **Recipe PDF export** — Share formatted A5 recipe cards with swatch, Lab values, and pigment ratios
 - **Brand catalog expansion** — Liquitex and Daniel Smith paints added (4 brands total)
-- **chroma_engine_ffi** — Mobile FFI loader package + `build_mobile.sh` for Android/iOS native builds
+- **chroma_engine_ffi** — Mobile FFI plugin (`ffiPlugin`) with Android/iOS build scripts
 - **High contrast** — Accessibility toggle wired in Settings
+
+## Phase 3 continued
+
+- **Native reflectance FFI** — Rust `chroma_mix` and `chroma_get_pigment_reflectance` return full 41-sample spectra
+- **Thread-safe engine** — Rust `OnceLock` replaces unsafe static (fixes parallel test crashes)
+- **Recipe JSON export** — Machine-readable `chromastudio-recipe-v1` format
+- **Schmincke catalog** — 5th brand added to paint browser
+- **Haptic feedback** — Mix sliders, palette knife, and canvas strokes
 
 ## License
 

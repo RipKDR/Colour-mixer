@@ -119,3 +119,39 @@ Future<Map<String, String>> loadPigmentNameMap() async {
   final list = (jsonDecode(jsonStr) as List).cast<Map<String, dynamic>>();
   return {for (final p in list) p['id'] as String: p['name'] as String};
 }
+
+Future<void> exportRecipeJson(
+  MixRecipe recipe, {
+  Map<String, String>? pigmentNames,
+}) async {
+  final pigments =
+      (jsonDecode(recipe.pigmentData) as List).cast<Map<String, dynamic>>();
+  final payload = {
+    'format': 'chromastudio-recipe-v1',
+    'name': recipe.name,
+    'notes': recipe.notes,
+    'lab': {'L': recipe.labL, 'a': recipe.labA, 'b': recipe.labB},
+    'colorArgb': recipe.colorValue,
+    'pigments': pigments
+        .map(
+          (p) => {
+            'id': p['id'],
+            'name': pigmentNames?[p['id'] as String] ?? p['id'],
+            'weight': (p['weight'] as num).toDouble(),
+          },
+        )
+        .toList(),
+    'exportedAt': DateTime.now().toUtc().toIso8601String(),
+  };
+
+  final dir = await getTemporaryDirectory();
+  final safeName = recipe.name.replaceAll(RegExp(r'[^\w\s-]'), '').trim();
+  final file = File('${dir.path}/chromastudio_$safeName.json');
+  await file.writeAsString(
+    const JsonEncoder.withIndent('  ').convert(payload),
+  );
+  await Share.shareXFiles(
+    [XFile(file.path, mimeType: 'application/json')],
+    subject: recipe.name,
+  );
+}

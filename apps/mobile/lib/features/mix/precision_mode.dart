@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/haptics.dart';
 import '../../core/theme.dart';
 import '../../engine/catalog.dart';
 import '../../engine/chroma_engine.dart';
@@ -107,7 +107,7 @@ class PrecisionModeScreen extends ConsumerWidget {
                     weight: entry.weight,
                     ratio: ratio,
                     onChanged: (w) {
-                      HapticFeedback.selectionClick();
+                      hapticSelect();
                       notifier.setWeight(index, w);
                     },
                     onRemove: session.entries.length > 1
