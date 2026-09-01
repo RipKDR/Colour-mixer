@@ -134,7 +134,7 @@ class InventoryScreen extends ConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 DropdownButtonFormField<String>(
-                  initialValue: selectedId,
+                  value: selectedId,
                   decoration: const InputDecoration(labelText: 'Pigment'),
                   items: engine.allPigments
                       .map((p) => DropdownMenuItem(
