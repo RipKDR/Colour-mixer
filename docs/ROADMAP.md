@@ -53,6 +53,8 @@ Status as of 2026-09-01 (`main` @ `7bb9f53`, PRs #1 and #2 merged). ✅ done · 
 - ✅ Sourcery follow-up on PR #2: preserve mix session when custom pigments
   refresh; do not swallow load errors into `[]`; validate 41-sample
   `reflectanceJson` (`mix_session.dart`, `custom_pigments_provider.dart`)
+- 🔶 Cloud recipe sync (email/password, explicit Push/Pull via `package:appwrite`;
+  Drift stays authoritative; no community sharing / realtime / OAuth)
 - ⬜ Android device build validated (`./tools/build_mobile.sh android` — needs cargo-ndk/NDK)
 - ⬜ iOS build validated (needs a Mac)
 
@@ -60,4 +62,4 @@ Status as of 2026-09-01 (`main` @ `7bb9f53`, PRs #1 and #2 merged). ✅ done · 
 
 - Golden tests for screens; broader widget test coverage
 - User-measured reflectance curves (replace Lab synthesis)
-- Cloud sync / recipe community sharing
+- Recipe community sharing / realtime / OAuth / inventory+custom-pigment cloud sync

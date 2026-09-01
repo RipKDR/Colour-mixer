@@ -56,16 +56,18 @@ with six branches: `/mix`, `/canvas`, `/recipes`, `/learn`, `/inventory`,
 ## Persistence (Drift/SQLite)
 
 `features/recipes/database.dart`, generated code committed in `database.g.dart`.
-`schemaVersion = 3`. Tables:
+`schemaVersion = 4`. Tables:
 
-- **Recipes** — name, notes, pigment entries (JSON), Lab + ARGB snapshot, binder.
+- **Recipes** — name, notes, pigment entries (JSON), Lab + ARGB snapshot, optional
+  `cloudId` (Appwrite document id) and `cloudUserId` (owning Appwrite user, so
+  a later sign-in as a different account does not reuse the previous document).
 - **InventoryItems** — pigmentId, brand, tube size ml, price, remaining fraction.
 - **LessonProgress** — per-lesson best ΔE for Learn challenges.
 - **CustomPigments** — user-entered paints (Lab + synthesized 41-sample reflectance JSON, opacity, tinting, binder).
 
 Migration strategy: `onUpgrade` adds v2 tables, then the v3 `CustomPigments`
-table. Any schema change requires a version bump + migration + `build_runner`
-regeneration.
+table, then the v4 `MixRecipes.cloudId` / `cloudUserId` columns. Any schema change requires a
+version bump + migration + `build_runner` regeneration.
 
 ## Data pipeline
 

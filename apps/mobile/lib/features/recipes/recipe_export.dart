@@ -120,13 +120,14 @@ Future<Map<String, String>> loadPigmentNameMap() async {
   return {for (final p in list) p['id'] as String: p['name'] as String};
 }
 
-Future<void> exportRecipeJson(
+Map<String, dynamic> recipeToJsonMap(
   MixRecipe recipe, {
   Map<String, String>? pigmentNames,
-}) async {
+  DateTime? exportedAt,
+}) {
   final pigments =
       (jsonDecode(recipe.pigmentData) as List).cast<Map<String, dynamic>>();
-  final payload = {
+  return {
     'format': 'chromastudio-recipe-v1',
     'name': recipe.name,
     'notes': recipe.notes,
@@ -141,8 +142,29 @@ Future<void> exportRecipeJson(
           },
         )
         .toList(),
-    'exportedAt': DateTime.now().toUtc().toIso8601String(),
+    'exportedAt': (exportedAt ?? DateTime.now()).toUtc().toIso8601String(),
   };
+}
+
+String recipeToJson(
+  MixRecipe recipe, {
+  Map<String, String>? pigmentNames,
+  DateTime? exportedAt,
+}) {
+  return jsonEncode(
+    recipeToJsonMap(
+      recipe,
+      pigmentNames: pigmentNames,
+      exportedAt: exportedAt,
+    ),
+  );
+}
+
+Future<void> exportRecipeJson(
+  MixRecipe recipe, {
+  Map<String, String>? pigmentNames,
+}) async {
+  final payload = recipeToJsonMap(recipe, pigmentNames: pigmentNames);
 
   final dir = await getTemporaryDirectory();
   final safeName = recipe.name.replaceAll(RegExp(r'[^\w\s-]'), '').trim();

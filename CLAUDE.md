@@ -63,7 +63,7 @@ cd apps/mobile && /agent/flutter/bin/dart run build_runner build --delete-confli
    Dart fallback engine. Never write a test that requires the native backend.
 4. **`fromJson`/DB codegen:** `database.g.dart` is committed. Regenerate with
    build_runner after schema edits and bump `schemaVersion` + add a migration in
-   `database.dart` (currently version 3).
+   `database.dart` (currently version 4).
 5. **Never block the UI isolate with the solver.** `MixSolver` runs via
    `compute(solveMixRequest, SolveRequest(...))` — keep it that way.
 
@@ -83,7 +83,7 @@ cd apps/mobile && /agent/flutter/bin/dart run build_runner build --delete-confli
 
 ```
 apps/mobile/               Flutter app (package name: chromastudio)
-  lib/core/                router, theme, settings providers, haptics
+  lib/core/                router, theme, settings providers, haptics, Appwrite client
   lib/engine/              Dart engine: chroma_engine.dart (KM + colorimetry),
                            mix_session.dart (Riverpod state), native_engine.dart (FFI backend),
                            mix_solver.dart, mediums.dart, catalog.dart, mix_cost.dart, mix_shader.dart

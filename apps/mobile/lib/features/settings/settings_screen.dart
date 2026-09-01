@@ -7,6 +7,7 @@ import '../../core/theme.dart';
 import '../../engine/chroma_engine.dart';
 import '../../engine/mix_session.dart';
 import '../../engine/native_engine.dart';
+import '../account/account_section.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -96,6 +97,8 @@ class SettingsScreen extends ConsumerWidget {
             trailing: const Icon(Icons.chevron_right),
             onTap: () => context.push('/custom-pigments'),
           ),
+          const _SectionHeader('Account'),
+          const AccountSection(),
           const _SectionHeader('About'),
           Consumer(
             builder: (context, ref, _) {
