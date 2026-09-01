@@ -83,6 +83,14 @@ and never echo tokens.
 
 ## Known gaps / fragile areas
 
+- **Pigment spectra are synthetic.** `tools/generate_pigments.py` produces
+  plausible gaussian/sigmoid reflectance curves (regenerated after the CIE CMF
+  fix — the old curves for blues/greens/purples were inverted and only looked
+  right under the old fabricated CMFs). Replacing them with measured spectra
+  (e.g. from artist-paint spectral databases) would be a big accuracy win.
+- **D50/TL84/LED SPDs are approximations**, not the CIE/IES tables. D65 and
+  Illuminant A behaviour are the trustworthy ones.
+
 - **Mobile native builds are untested.** `tools/build_mobile.sh` and the
   `chroma_engine_ffi` Android/iOS scaffolding (jniLibs, podspec) exist but have never
   run against a real NDK/Xcode. Android needs `cargo-ndk` + NDK installed; iOS needs

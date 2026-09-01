@@ -3,6 +3,7 @@
 
 import json
 import math
+import pathlib
 
 SAMPLES = 41
 WL_MIN = 380
@@ -66,8 +67,7 @@ PIGMENTS = [
         "tinting_strength": 0.9,
         "toxicity": "high",
         "binder": "acrylic",
-        "profile": lambda wl: sigmoid_reflectance(wl, 0.08, 0.02, 520, -0.05)
-        + gaussian(wl, 580, 40, 0.7),
+        "profile": lambda wl: sigmoid_reflectance(wl, 0.04, 0.85, 510, 0.05),
     },
     {
         "id": "ultramarine_blue",
@@ -77,8 +77,9 @@ PIGMENTS = [
         "tinting_strength": 1.1,
         "toxicity": "low",
         "binder": "acrylic",
-        "profile": lambda wl: sigmoid_reflectance(wl, 0.7, 0.06, 480, -0.03)
-        + gaussian(wl, 450, 25, 0.2),
+        "profile": lambda wl: 0.04
+        + gaussian(wl, 465, 35, 0.55)
+        + gaussian(wl, 760, 60, 0.12),
     },
     {
         "id": "phthalo_blue_gs",
@@ -88,8 +89,7 @@ PIGMENTS = [
         "tinting_strength": 2.0,
         "toxicity": "low",
         "binder": "acrylic",
-        "profile": lambda wl: sigmoid_reflectance(wl, 0.75, 0.04, 460, -0.04)
-        + gaussian(wl, 490, 20, 0.15),
+        "profile": lambda wl: 0.03 + gaussian(wl, 475, 30, 0.5),
     },
     {
         "id": "phthalo_green",
@@ -99,8 +99,9 @@ PIGMENTS = [
         "tinting_strength": 2.0,
         "toxicity": "low",
         "binder": "acrylic",
-        "profile": lambda wl: sigmoid_reflectance(wl, 0.7, 0.05, 500, -0.03)
-        * sigmoid_reflectance(wl, 0.05, 0.6, 650, 0.05),
+        "profile": lambda wl: 0.02
+        + gaussian(wl, 510, 30, 0.5)
+        + gaussian(wl, 455, 20, 0.06),
     },
     {
         "id": "yellow_ochre",
@@ -110,7 +111,7 @@ PIGMENTS = [
         "tinting_strength": 0.7,
         "toxicity": "low",
         "binder": "acrylic",
-        "profile": lambda wl: 0.15 + gaussian(wl, 580, 60, 0.5) + gaussian(wl, 450, 80, 0.1),
+        "profile": lambda wl: sigmoid_reflectance(wl, 0.08, 0.55, 530, 0.04),
     },
     {
         "id": "burnt_sienna",
@@ -120,7 +121,8 @@ PIGMENTS = [
         "tinting_strength": 0.8,
         "toxicity": "low",
         "binder": "acrylic",
-        "profile": lambda wl: 0.1 + gaussian(wl, 600, 70, 0.45) + gaussian(wl, 480, 60, 0.15),
+        "profile": lambda wl: 0.04
+        + sigmoid_reflectance(wl, 0.0, 0.35, 590, 0.035),
     },
     {
         "id": "raw_umber",
@@ -130,7 +132,8 @@ PIGMENTS = [
         "tinting_strength": 1.0,
         "toxicity": "low",
         "binder": "acrylic",
-        "profile": lambda wl: 0.08 + gaussian(wl, 550, 80, 0.3) + gaussian(wl, 650, 50, 0.15),
+        "profile": lambda wl: 0.05
+        + sigmoid_reflectance(wl, 0.0, 0.14, 560, 0.025),
     },
     {
         "id": "alizarin_crimson",
@@ -140,8 +143,8 @@ PIGMENTS = [
         "tinting_strength": 1.5,
         "toxicity": "medium",
         "binder": "acrylic",
-        "profile": lambda wl: sigmoid_reflectance(wl, 0.06, 0.55, 580, 0.035)
-        + gaussian(wl, 500, 40, 0.1),
+        "profile": lambda wl: sigmoid_reflectance(wl, 0.03, 0.45, 615, 0.05)
+        + gaussian(wl, 430, 30, 0.08),
     },
     {
         "id": "quinacridone_magenta",
@@ -151,8 +154,8 @@ PIGMENTS = [
         "tinting_strength": 1.8,
         "toxicity": "low",
         "binder": "acrylic",
-        "profile": lambda wl: sigmoid_reflectance(wl, 0.05, 0.6, 560, 0.04)
-        + gaussian(wl, 520, 30, 0.12),
+        "profile": lambda wl: sigmoid_reflectance(wl, 0.05, 0.65, 590, 0.045)
+        + gaussian(wl, 430, 30, 0.2),
     },
     {
         "id": "hansa_yellow",
@@ -162,8 +165,7 @@ PIGMENTS = [
         "tinting_strength": 1.0,
         "toxicity": "low",
         "binder": "acrylic",
-        "profile": lambda wl: sigmoid_reflectance(wl, 0.06, 0.02, 500, -0.06)
-        + gaussian(wl, 570, 35, 0.75),
+        "profile": lambda wl: sigmoid_reflectance(wl, 0.04, 0.8, 495, 0.06),
     },
     {
         "id": "pyrrole_red",
@@ -183,8 +185,9 @@ PIGMENTS = [
         "tinting_strength": 2.0,
         "toxicity": "low",
         "binder": "acrylic",
-        "profile": lambda wl: sigmoid_reflectance(wl, 0.65, 0.08, 520, -0.03)
-        * sigmoid_reflectance(wl, 0.08, 0.4, 580, 0.03),
+        "profile": lambda wl: 0.03
+        + gaussian(wl, 420, 25, 0.25)
+        + gaussian(wl, 740, 50, 0.2),
     },
     {
         "id": "cerulean_blue",
@@ -194,8 +197,7 @@ PIGMENTS = [
         "tinting_strength": 0.8,
         "toxicity": "medium",
         "binder": "acrylic",
-        "profile": lambda wl: sigmoid_reflectance(wl, 0.55, 0.12, 490, -0.025)
-        + gaussian(wl, 480, 30, 0.2),
+        "profile": lambda wl: 0.06 + gaussian(wl, 480, 40, 0.45),
     },
     {
         "id": "viridian",
@@ -205,8 +207,9 @@ PIGMENTS = [
         "tinting_strength": 1.2,
         "toxicity": "medium",
         "binder": "acrylic",
-        "profile": lambda wl: sigmoid_reflectance(wl, 0.6, 0.08, 510, -0.025)
-        * sigmoid_reflectance(wl, 0.08, 0.45, 620, 0.035),
+        "profile": lambda wl: 0.04
+        + gaussian(wl, 505, 35, 0.45)
+        + gaussian(wl, 470, 25, 0.1),
     },
     {
         "id": "naples_yellow",
@@ -226,7 +229,8 @@ PIGMENTS = [
         "tinting_strength": 1.1,
         "toxicity": "low",
         "binder": "acrylic",
-        "profile": lambda wl: 0.06 + gaussian(wl, 580, 70, 0.25) + gaussian(wl, 480, 50, 0.1),
+        "profile": lambda wl: 0.03
+        + sigmoid_reflectance(wl, 0.0, 0.16, 600, 0.03),
     },
     {
         "id": "paynes_gray",
@@ -248,9 +252,15 @@ def main():
         reflectance = generate_spectrum(profile)
         output.append({**p, "reflectance": reflectance})
 
-    with open("/agent/data/pigments/all_pigments.json", "w") as f:
-        json.dump(output, f, indent=2)
-    print(f"Generated {len(output)} pigments")
+    repo_root = pathlib.Path(__file__).resolve().parent.parent
+    for target in [
+        repo_root / "data" / "pigments" / "all_pigments.json",
+        repo_root / "apps" / "mobile" / "assets" / "pigments" / "all_pigments.json",
+    ]:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        with open(target, "w") as f:
+            json.dump(output, f, indent=2)
+        print(f"Wrote {len(output)} pigments to {target}")
 
 
 if __name__ == "__main__":

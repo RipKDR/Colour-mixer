@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:chromastudio/engine/chroma_engine.dart';
@@ -12,9 +14,11 @@ void main() {
           id: 'blue',
           name: 'Blue',
           pigmentCodes: ['PB29'],
+          // Plausible blue: gaussian reflectance band peaking near 470nm.
           reflectance: List.generate(41, (i) {
             final wl = 380.0 + i * 10;
-            return wl < 500 ? 0.6 - (wl - 380) / 600 : 0.08;
+            final d = (wl - 470) / 50;
+            return 0.05 + 0.45 * math.exp(-d * d);
           }),
           opacity: 0.9,
           tintingStrength: 1.0,
@@ -27,9 +31,10 @@ void main() {
           id: 'yellow',
           name: 'Yellow',
           pigmentCodes: ['PY74'],
+          // Plausible yellow: sigmoid absorbing blue, reflecting >505nm.
           reflectance: List.generate(41, (i) {
             final wl = 380.0 + i * 10;
-            return wl > 520 ? 0.7 : 0.1;
+            return 0.03 + 0.77 / (1 + math.exp(-0.08 * (wl - 505)));
           }),
           opacity: 0.9,
           tintingStrength: 1.0,

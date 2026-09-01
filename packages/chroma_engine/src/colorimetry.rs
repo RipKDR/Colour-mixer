@@ -4,53 +4,55 @@ pub const WAVELENGTH_MAX: f64 = 780.0;
 pub const WAVELENGTH_STEP: f64 =
     (WAVELENGTH_MAX - WAVELENGTH_MIN) / (SPECTRUM_SAMPLES - 1) as f64;
 
-fn cmf_x(wl: f64) -> f64 {
-    match wl as u32 {
-        380..=439 => 0.001368 * (wl - 380.0) / 60.0,
-        440..=489 => 0.0143 + 0.0956 * (wl - 440.0) / 50.0,
-        490..=519 => 0.13438 + 0.2146 * (wl - 490.0) / 30.0,
-        520..=559 => 0.34828 + 0.0601 * (wl - 520.0) / 40.0,
-        560..=589 => 0.40826 - 0.0401 * (wl - 560.0) / 30.0,
-        590..=639 => 0.36826 - 0.2000 * (wl - 590.0) / 50.0,
-        640..=780 => 0.16826 - 0.16826 * (wl - 640.0) / 140.0,
-        _ => 0.0,
-    }
-}
+/// CIE 1931 2-degree standard observer x-bar, 380-780 nm at 10 nm.
+const CMF_X: [f64; SPECTRUM_SAMPLES] = [
+    0.001368, 0.004243, 0.014310, 0.043510, 0.134380, 0.283900, 0.348280,
+    0.336200, 0.290800, 0.195360, 0.095640, 0.032010, 0.004900, 0.009300,
+    0.063270, 0.165500, 0.290400, 0.433450, 0.594500, 0.762100, 0.916300,
+    1.026300, 1.062200, 1.002600, 0.854450, 0.642400, 0.447900, 0.283500,
+    0.164900, 0.087400, 0.046770, 0.022700, 0.011359, 0.005790, 0.002899,
+    0.001440, 0.000690, 0.000332, 0.000166, 0.000083, 0.000042,
+];
 
-fn cmf_y(wl: f64) -> f64 {
-    match wl as u32 {
-        380..=439 => 0.000039 * (wl - 380.0) / 60.0,
-        440..=489 => 0.0040 + 0.3960 * (wl - 440.0) / 50.0,
-        490..=519 => 0.4 + 0.4 * (wl - 490.0) / 30.0,
-        520..=559 => 0.8 - 0.2 * (wl - 520.0) / 40.0,
-        560..=589 => 0.6 - 0.1 * (wl - 560.0) / 30.0,
-        590..=639 => 0.5 - 0.3 * (wl - 590.0) / 50.0,
-        640..=780 => 0.2 - 0.2 * (wl - 640.0) / 140.0,
-        _ => 0.0,
-    }
-}
+/// CIE 1931 2-degree standard observer y-bar.
+const CMF_Y: [f64; SPECTRUM_SAMPLES] = [
+    0.000039, 0.000120, 0.000396, 0.001210, 0.004000, 0.011600, 0.023000,
+    0.038000, 0.060000, 0.090980, 0.139020, 0.208020, 0.323000, 0.503000,
+    0.710000, 0.862000, 0.954000, 0.994950, 0.995000, 0.952000, 0.870000,
+    0.757000, 0.631000, 0.503000, 0.381000, 0.265000, 0.175000, 0.107000,
+    0.061000, 0.032000, 0.017000, 0.008210, 0.004102, 0.002091, 0.001047,
+    0.000520, 0.000249, 0.000120, 0.000060, 0.000030, 0.000015,
+];
 
-fn cmf_z(wl: f64) -> f64 {
-    match wl as u32 {
-        380..=439 => 0.006450 * (wl - 380.0) / 60.0,
-        440..=489 => 0.0645 + 0.3040 * (wl - 440.0) / 50.0,
-        490..=519 => 0.3686 + 0.0314 * (wl - 490.0) / 30.0,
-        520..=559 => 0.4 - 0.1 * (wl - 520.0) / 40.0,
-        560..=589 => 0.3 - 0.15 * (wl - 560.0) / 30.0,
-        590..=639 => 0.15 - 0.1 * (wl - 590.0) / 50.0,
-        640..=780 => 0.05 - 0.05 * (wl - 640.0) / 140.0,
-        _ => 0.0,
-    }
-}
+/// CIE 1931 2-degree standard observer z-bar.
+const CMF_Z: [f64; SPECTRUM_SAMPLES] = [
+    0.006450, 0.020050, 0.067850, 0.207400, 0.645600, 1.385600, 1.747060,
+    1.772110, 1.669200, 1.287640, 0.812950, 0.465180, 0.272000, 0.158200,
+    0.078250, 0.042160, 0.020300, 0.008750, 0.003900, 0.002100, 0.001650,
+    0.001100, 0.000800, 0.000340, 0.000190, 0.000050, 0.000020, 0.000000,
+    0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000,
+    0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000,
+];
 
-fn illuminant_d65(wl: f64) -> f64 {
-    if wl < 500.0 {
-        0.5 + 0.5 * (wl - 380.0) / 120.0
-    } else if wl < 600.0 {
-        1.0
-    } else {
-        1.0 - 0.5 * (wl - 600.0) / 180.0
-    }
+/// CIE Standard Illuminant D65 relative SPD, same sampling.
+const D65_SPD: [f64; SPECTRUM_SAMPLES] = [
+    49.9755, 54.6482, 82.7549, 91.4860, 93.4318, 86.6823, 104.8650,
+    117.0080, 117.8120, 114.8610, 115.9230, 108.8110, 109.3540, 107.8020,
+    104.7900, 107.6890, 104.4050, 104.0460, 100.0000, 96.3342, 95.7880,
+    88.6856, 90.0062, 89.5991, 87.6987, 83.2886, 83.6992, 80.0268,
+    80.2146, 82.2778, 78.2842, 69.7213, 71.6091, 74.3490, 61.6040,
+    69.8856, 75.0870, 63.5927, 46.4182, 66.8054, 63.3828,
+];
+
+/// D65 white point computed from the tables above, so a perfect reflector
+/// maps exactly to Lab (100, 0, 0). The 10 nm sampling gives values a hair
+/// off the 1 nm standard (95.047, 100, 108.883).
+fn d65_white() -> (f64, f64, f64) {
+    static WHITE: std::sync::OnceLock<(f64, f64, f64)> = std::sync::OnceLock::new();
+    *WHITE.get_or_init(|| {
+        let ones = [1.0; SPECTRUM_SAMPLES];
+        spectrum_to_xyz(&ones)
+    })
 }
 
 pub fn wavelength_at(index: usize) -> f64 {
@@ -75,13 +77,12 @@ pub fn spectrum_to_xyz(reflectance: &[f64; SPECTRUM_SAMPLES]) -> (f64, f64, f64)
     let mut y_norm = 0.0;
 
     for (i, &r) in reflectance.iter().enumerate() {
-        let wl = wavelength_at(i);
-        let illum = illuminant_d65(wl);
+        let illum = D65_SPD[i];
         let r_clamped = r.clamp(0.0, 1.0);
-        x += r_clamped * cmf_x(wl) * illum;
-        y += r_clamped * cmf_y(wl) * illum;
-        z += r_clamped * cmf_z(wl) * illum;
-        y_norm += cmf_y(wl) * illum;
+        x += r_clamped * CMF_X[i] * illum;
+        y += r_clamped * CMF_Y[i] * illum;
+        z += r_clamped * CMF_Z[i] * illum;
+        y_norm += CMF_Y[i] * illum;
     }
 
     if y_norm > 0.0 {
@@ -100,9 +101,7 @@ pub fn xyz_to_lab(x: f64, y: f64, z: f64) -> (f64, f64, f64) {
         }
     }
 
-    let xn = 95.047;
-    let yn = 100.0;
-    let zn = 108.883;
+    let (xn, yn, zn) = d65_white();
 
     let l = 116.0 * f(y / yn) - 16.0;
     let a = 500.0 * (f(x / xn) - f(y / yn));
@@ -246,7 +245,8 @@ pub fn lab_to_srgb(l: f64, a: f64, b: f64) -> (f64, f64, f64) {
     let y = if y3 > 0.008856 { y3 } else { (y - 16.0 / 116.0) / 7.787 };
     let z = if z3 > 0.008856 { z3 } else { (z - 16.0 / 116.0) / 7.787 };
 
-    xyz_to_srgb(x * 95.047, y * 100.0, z * 108.883)
+    let (xn, yn, zn) = d65_white();
+    xyz_to_srgb(x * xn, y * yn, z * zn)
 }
 
 #[cfg(test)]
@@ -279,6 +279,35 @@ mod tests {
         let white = [0.95; SPECTRUM_SAMPLES];
         let (l, _, _) = spectrum_to_lab(&white);
         assert!(l > 90.0);
+    }
+
+    #[test]
+    fn perfect_white_reproduces_d65_white_point() {
+        let white = [1.0; SPECTRUM_SAMPLES];
+        let (x, y, z) = spectrum_to_xyz(&white);
+        // 10 nm sampling leaves small residuals vs the 1 nm standard values.
+        assert!((x - 95.047).abs() < 0.3, "X = {x}");
+        assert!((y - 100.0).abs() < 0.001, "Y = {y}");
+        assert!((z - 108.883).abs() < 0.3, "Z = {z}");
+    }
+
+    #[test]
+    fn perfect_white_is_neutral_in_lab_and_srgb() {
+        let white = [1.0; SPECTRUM_SAMPLES];
+        let (l, a, b) = spectrum_to_lab(&white);
+        assert!((l - 100.0).abs() < 0.01, "L = {l}");
+        assert!(a.abs() < 0.05, "a = {a}");
+        assert!(b.abs() < 0.05, "b = {b}");
+        let (r, g, bl) = spectrum_to_srgb(&white);
+        assert!((r - 1.0).abs() < 0.01 && (g - 1.0).abs() < 0.01 && (bl - 1.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn flat_gray_is_neutral_in_lab() {
+        let gray = [0.2; SPECTRUM_SAMPLES];
+        let (_, a, b) = spectrum_to_lab(&gray);
+        assert!(a.abs() < 0.1, "a = {a}");
+        assert!(b.abs() < 0.1, "b = {b}");
     }
 
     #[test]

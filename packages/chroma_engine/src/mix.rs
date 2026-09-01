@@ -62,13 +62,24 @@ impl Mixer {
             return Err(MixError::EmptyMix);
         }
 
+        // Tinting strength only sets pigments' relative dominance: effective
+        // weights are normalized by the strength-weighted total so a pure
+        // pigment always reproduces its own masstone.
+        let mut strength_total = 0.0;
+        for component in components {
+            let pigment = self.db.get(&component.pigment_id)?;
+            strength_total += component.weight * pigment.tinting_strength;
+        }
+        if strength_total <= 0.0 {
+            strength_total = total_weight;
+        }
+
         let mut ks_mixed = [0.0; SPECTRUM_SAMPLES];
 
         for component in components {
             let pigment = self.db.get(&component.pigment_id)?;
-            let normalized = component.weight / total_weight;
-            let strength = pigment.tinting_strength;
-            let effective_weight = normalized * strength;
+            let effective_weight =
+                component.weight * pigment.tinting_strength / strength_total;
 
             for i in 0..SPECTRUM_SAMPLES {
                 let ks = reflectance_to_ks(pigment.reflectance[i]);
@@ -155,6 +166,26 @@ mod tests {
         let (r, g, b) = result.srgb;
         assert!(g > r && g > b, "Expected green dominant, got ({r},{g},{b})");
         assert!(result.lab.1 < 0.0, "Green should have negative a*");
+    }
+
+    #[test]
+    fn pure_pigment_mix_reproduces_its_own_masstone() {
+        let mixer = Mixer::new(test_db());
+        // Pick pigments whose tinting strength differs from 1.0 so the
+        // normalization actually matters.
+        for id in ["titanium_white", "ivory_black", "cadmium_red_light"] {
+            let pigment = mixer.database().get(id).unwrap().clone();
+            let mixed = mixer
+                .mix_weighted(&[MixComponent {
+                    pigment_id: id.into(),
+                    weight: 1.0,
+                }])
+                .unwrap();
+            let direct = spectrum_to_lab(&pigment.reflectance);
+            assert!((mixed.lab.0 - direct.0).abs() < 0.01, "{id} L");
+            assert!((mixed.lab.1 - direct.1).abs() < 0.01, "{id} a");
+            assert!((mixed.lab.2 - direct.2).abs() < 0.01, "{id} b");
+        }
     }
 
     #[test]

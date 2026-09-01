@@ -25,8 +25,9 @@ Any change to mixing or colorimetry must land in **both**.
 ## Kubelka–Munk mixing
 
 1. Per wavelength: `K/S = (1 − R)² / (2R)` (reflectance clamped away from 0/1).
-2. Weighted average of K/S across components; weights = user weights ×
-   tinting strength.
+2. Weighted average of K/S across components; effective weight =
+   `w·s / Σ(wⱼ·sⱼ)` (tinting strength sets *relative* dominance only, so a
+   pure pigment always reproduces its own masstone).
 3. Back-convert: `R = 1 + K/S − sqrt((K/S)² + 2·K/S)`.
 
 This models subtractive pigment behaviour (blue + yellow → green), which plain
@@ -34,12 +35,18 @@ RGB averaging cannot.
 
 ## Colorimetry (Dart `Colorimetry` class; Rust `colorimetry.rs`)
 
-- `spectrumToXyz` — CIE 1931 2° observer, D65 by default; illuminant-aware
+- `spectrumToXyz` — real CIE 1931 2° observer tables and the CIE D65 SPD,
+  sampled at the engine's 41 points (380–780 nm / 10 nm). Illuminant-aware
   variants `spectrumToLabUnder` / `spectrumToColorUnder` take an `Illuminant`.
-- **Illuminants** (Dart enum): `d65`, `d50`, `incandescent` (A), `fluorescent`
-  (TL84), `coolLed` (6500 K), `warmLed` (3000 K) — each with an SPD used by the
-  light booth and metamerism checks.
-- `xyzToLab` / Lab→XYZ with standard D65 white point (95.047, 100.0, 108.883).
+- **Illuminants** (Dart enum): `d65` (CIE table), `d50`, `incandescent` (A,
+  red-heavy `(wl/560)^5`), `fluorescent` (TL84 approx), `coolLed` (450 nm blue
+  pump + phosphor), `warmLed` — used by the light booth and metamerism checks.
+- `xyzToLab` normalizes against the white point computed from the engine's own
+  CMF/illuminant integrals (≈95.02, 100, 108.81 for D65 at 10 nm sampling), so
+  a perfect reflector is exactly Lab (100, 0, 0). `spectrumToLabUnder`
+  normalizes to the *chosen illuminant's* white, so neutrals stay neutral
+  under every light. The sRGB↔Lab matrix paths use the standard constants
+  (95.047, 100.0, 108.883).
 - `srgbToLab(r, g, b)` — gamma-decode → linear RGB → XYZ (sRGB D65 matrix) → Lab.
   Added for the photo eyedropper; roundtrip-tested against `labToSrgb`.
 - `labToSrgb` — **fixed in commit `64df6e8`**: the Lab inverse nonlinearity now

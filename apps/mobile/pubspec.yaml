@@ -42,6 +42,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/pigments/all_pigments.json
-    - assets/shaders/
     - assets/data/mediums.json
     - assets/data/brands/
+  shaders:
+    - assets/shaders/mix_blend.frag

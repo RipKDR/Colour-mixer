@@ -116,65 +116,74 @@ class Colorimetry {
 
   static double _wavelength(int index) => 380.0 + index * 10.0;
 
-  static double _cmfX(double wl) {
-    if (wl < 440) return 0.001368 * (wl - 380) / 60;
-    if (wl < 490) return 0.0143 + 0.0956 * (wl - 440) / 50;
-    if (wl < 520) return 0.13438 + 0.2146 * (wl - 490) / 30;
-    if (wl < 560) return 0.34828 + 0.0601 * (wl - 520) / 40;
-    if (wl < 590) return 0.40826 - 0.0401 * (wl - 560) / 30;
-    if (wl < 640) return 0.36826 - 0.2000 * (wl - 590) / 50;
-    return 0.16826 - 0.16826 * (wl - 640) / 140;
-  }
+  static int _sampleIndex(double wl) =>
+      ((wl - 380.0) / 10.0).round().clamp(0, spectrumSamples - 1);
 
-  static double _cmfY(double wl) {
-    if (wl < 440) return 0.000039 * (wl - 380) / 60;
-    if (wl < 490) return 0.0040 + 0.3960 * (wl - 440) / 50;
-    if (wl < 520) return 0.4 + 0.4 * (wl - 490) / 30;
-    if (wl < 560) return 0.8 - 0.2 * (wl - 520) / 40;
-    if (wl < 590) return 0.6 - 0.1 * (wl - 560) / 30;
-    if (wl < 640) return 0.5 - 0.3 * (wl - 590) / 50;
-    return 0.2 - 0.2 * (wl - 640) / 140;
-  }
+  // CIE 1931 2-degree standard observer, 380-780 nm at 10 nm (41 samples).
+  static const List<double> _cmfXTable = [
+    0.001368, 0.004243, 0.014310, 0.043510, 0.134380, 0.283900, 0.348280,
+    0.336200, 0.290800, 0.195360, 0.095640, 0.032010, 0.004900, 0.009300,
+    0.063270, 0.165500, 0.290400, 0.433450, 0.594500, 0.762100, 0.916300,
+    1.026300, 1.062200, 1.002600, 0.854450, 0.642400, 0.447900, 0.283500,
+    0.164900, 0.087400, 0.046770, 0.022700, 0.011359, 0.005790, 0.002899,
+    0.001440, 0.000690, 0.000332, 0.000166, 0.000083, 0.000042,
+  ];
 
-  static double _cmfZ(double wl) {
-    if (wl < 440) return 0.006450 * (wl - 380) / 60;
-    if (wl < 490) return 0.0645 + 0.3040 * (wl - 440) / 50;
-    if (wl < 520) return 0.3686 + 0.0314 * (wl - 490) / 30;
-    if (wl < 560) return 0.4 - 0.1 * (wl - 520) / 40;
-    if (wl < 590) return 0.3 - 0.15 * (wl - 560) / 30;
-    if (wl < 640) return 0.15 - 0.1 * (wl - 590) / 50;
-    return 0.05 - 0.05 * (wl - 640) / 140;
-  }
+  static const List<double> _cmfYTable = [
+    0.000039, 0.000120, 0.000396, 0.001210, 0.004000, 0.011600, 0.023000,
+    0.038000, 0.060000, 0.090980, 0.139020, 0.208020, 0.323000, 0.503000,
+    0.710000, 0.862000, 0.954000, 0.994950, 0.995000, 0.952000, 0.870000,
+    0.757000, 0.631000, 0.503000, 0.381000, 0.265000, 0.175000, 0.107000,
+    0.061000, 0.032000, 0.017000, 0.008210, 0.004102, 0.002091, 0.001047,
+    0.000520, 0.000249, 0.000120, 0.000060, 0.000030, 0.000015,
+  ];
 
-  static double _d65(double wl) {
-    if (wl < 500) return 0.5 + 0.5 * (wl - 380) / 120;
-    if (wl < 600) return 1.0;
-    return 1.0 - 0.5 * (wl - 600) / 180;
-  }
+  static const List<double> _cmfZTable = [
+    0.006450, 0.020050, 0.067850, 0.207400, 0.645600, 1.385600, 1.747060,
+    1.772110, 1.669200, 1.287640, 0.812950, 0.465180, 0.272000, 0.158200,
+    0.078250, 0.042160, 0.020300, 0.008750, 0.003900, 0.002100, 0.001650,
+    0.001100, 0.000800, 0.000340, 0.000190, 0.000050, 0.000020, 0.000000,
+    0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000,
+    0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000,
+  ];
+
+  // CIE Standard Illuminant D65 relative SPD, same sampling.
+  static const List<double> _d65Table = [
+    49.9755, 54.6482, 82.7549, 91.4860, 93.4318, 86.6823, 104.8650,
+    117.0080, 117.8120, 114.8610, 115.9230, 108.8110, 109.3540, 107.8020,
+    104.7900, 107.6890, 104.4050, 104.0460, 100.0000, 96.3342, 95.7880,
+    88.6856, 90.0062, 89.5991, 87.6987, 83.2886, 83.6992, 80.0268,
+    80.2146, 82.2778, 78.2842, 69.7213, 71.6091, 74.3490, 61.6040,
+    69.8856, 75.0870, 63.5927, 46.4182, 66.8054, 63.3828,
+  ];
 
   /// Relative spectral power distribution for standard viewing illuminants.
   static double illuminantSpd(Illuminant illuminant, double wl) {
     switch (illuminant) {
       case Illuminant.d65:
-        return _d65(wl);
+        return _d65Table[_sampleIndex(wl)];
       case Illuminant.d50:
-        if (wl < 500) return 0.65 + 0.35 * (wl - 380) / 120;
-        if (wl < 600) return 1.0;
-        return 1.0 - 0.35 * (wl - 600) / 180;
+        // Crude warm-daylight ramp relative to D65.
+        final warmth = wl < 500
+            ? 0.85 + 0.15 * (wl - 380) / 120
+            : (wl < 600 ? 1.0 : 1.0 + 0.1 * (wl - 600) / 180);
+        return _d65Table[_sampleIndex(wl)] * warmth;
       case Illuminant.incandescent:
-        return math.pow(560 / wl, 5).toDouble().clamp(0.05, 2.0);
+        // Tungsten is red-heavy: rising steeply with wavelength (~2856 K).
+        return math.pow(wl / 560, 5).toDouble().clamp(0.05, 3.0);
       case Illuminant.fluorescent:
-        final base = _d65(wl);
-        final spike = wl > 540 && wl < 560 ? 0.25 : 0.0;
+        final base = _d65Table[_sampleIndex(wl)];
+        final spike = wl > 540 && wl < 560 ? 25.0 : 0.0;
         return base + spike;
       case Illuminant.coolLed:
-        if (wl < 450) return 0.7 + 0.3 * (450 - wl) / 70;
-        if (wl < 500) return 0.85;
-        return 0.85 - 0.35 * (wl - 500) / 270;
+        // Blue pump near 450 nm plus a broad phosphor hump, valley near 480.
+        final pump = 1.6 * math.exp(-math.pow((wl - 450) / 18, 2));
+        final phosphor = 0.9 * math.exp(-math.pow((wl - 570) / 75, 2));
+        return pump + phosphor + 0.02;
       case Illuminant.warmLed:
-        if (wl < 500) return 0.55 + 0.45 * (wl - 380) / 120;
-        if (wl < 600) return 1.0;
-        return 1.0 - 0.55 * (wl - 600) / 180;
+        final pump = 0.5 * math.exp(-math.pow((wl - 450) / 18, 2));
+        final phosphor = 1.2 * math.exp(-math.pow((wl - 600) / 85, 2));
+        return pump + phosphor + 0.02;
     }
   }
 
@@ -183,17 +192,32 @@ class Colorimetry {
     Illuminant illuminant = Illuminant.d65,
   }) {
     var x = 0.0, y = 0.0, z = 0.0, yNorm = 0.0;
-    for (var i = 0; i < reflectance.length; i++) {
+    final n = math.min(reflectance.length, spectrumSamples);
+    for (var i = 0; i < n; i++) {
       final wl = _wavelength(i);
       final illum = illuminantSpd(illuminant, wl);
       final r = reflectance[i].clamp(0.0, 1.0);
-      x += r * _cmfX(wl) * illum;
-      y += r * _cmfY(wl) * illum;
-      z += r * _cmfZ(wl) * illum;
-      yNorm += _cmfY(wl) * illum;
+      x += r * _cmfXTable[i] * illum;
+      y += r * _cmfYTable[i] * illum;
+      z += r * _cmfZTable[i] * illum;
+      yNorm += _cmfYTable[i] * illum;
     }
     if (yNorm <= 0) return (0, 0, 0);
     return (x / yNorm * 100, y / yNorm * 100, z / yNorm * 100);
+  }
+
+  static final Map<Illuminant, (double, double, double)> _whitePointCache = {};
+
+  /// XYZ of a perfect reflector under [illuminant] — the reference white
+  /// used to normalize Lab so neutrals stay neutral under any light.
+  static (double, double, double) illuminantWhitePoint(Illuminant illuminant) {
+    return _whitePointCache.putIfAbsent(
+      illuminant,
+      () => spectrumToXyz(
+        List<double>.filled(spectrumSamples, 1.0),
+        illuminant: illuminant,
+      ),
+    );
   }
 
   static LabColor spectrumToLabUnder(
@@ -201,7 +225,7 @@ class Colorimetry {
     Illuminant illuminant,
   ) {
     final (x, y, z) = spectrumToXyz(reflectance, illuminant: illuminant);
-    return xyzToLab(x, y, z);
+    return xyzToLab(x, y, z, white: illuminantWhitePoint(illuminant));
   }
 
   static Color spectrumToColorUnder(
@@ -212,10 +236,15 @@ class Colorimetry {
     return srgbToColor(xyzToSrgb(x, y, z));
   }
 
-  static LabColor xyzToLab(double x, double y, double z) {
+  static LabColor xyzToLab(
+    double x,
+    double y,
+    double z, {
+    (double, double, double)? white,
+  }) {
     double f(double t) =>
         t > 0.008856 ? math.pow(t, 1 / 3).toDouble() : (903.3 * t + 16) / 116;
-    const xn = 95.047, yn = 100.0, zn = 108.883;
+    final (xn, yn, zn) = white ?? const (95.047, 100.0, 108.883);
     return LabColor(
       116.0 * f(y / yn) - 16.0,
       500.0 * (f(x / xn) - f(y / yn)),
@@ -225,7 +254,7 @@ class Colorimetry {
 
   static LabColor spectrumToLab(List<double> reflectance) {
     final (x, y, z) = spectrumToXyz(reflectance);
-    return xyzToLab(x, y, z);
+    return xyzToLab(x, y, z, white: illuminantWhitePoint(Illuminant.d65));
   }
 
   static (double, double, double) xyzToSrgb(double x, double y, double z) {
@@ -285,9 +314,10 @@ class Colorimetry {
     List<double> b,
     double t,
   ) {
+    final tc = t.clamp(0.0, 1.0);
     final result = <double>[];
     for (var i = 0; i < a.length; i++) {
-      final ks = reflectanceToKs(a[i]) * (1 - t) + reflectanceToKs(b[i]) * t;
+      final ks = reflectanceToKs(a[i]) * (1 - tc) + reflectanceToKs(b[i]) * tc;
       result.add(ksToReflectance(ks));
     }
     return result;
@@ -408,12 +438,23 @@ class ChromaEngine {
       );
     }
 
+    // Tinting strength only sets pigments' relative dominance: effective
+    // weights are normalized by the strength-weighted total so a pure
+    // pigment always reproduces its own masstone.
+    var strengthTotal = 0.0;
+    for (final component in components) {
+      final pigment = _pigments[component.pigmentId];
+      if (pigment == null) continue;
+      strengthTotal += component.weight * pigment.tintingStrength;
+    }
+    if (strengthTotal <= 0) strengthTotal = total;
+
     final ksMixed = List<double>.filled(Colorimetry.spectrumSamples, 0);
     for (final component in components) {
       final pigment = _pigments[component.pigmentId];
       if (pigment == null) continue;
-      final normalized = component.weight / total;
-      final effective = normalized * pigment.tintingStrength;
+      final effective =
+          component.weight * pigment.tintingStrength / strengthTotal;
       for (var i = 0; i < pigment.reflectance.length; i++) {
         ksMixed[i] +=
             Colorimetry.reflectanceToKs(pigment.reflectance[i]) * effective;
