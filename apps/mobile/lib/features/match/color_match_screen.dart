@@ -298,18 +298,27 @@ class _ColorMatchScreenState extends ConsumerState<ColorMatchScreen> {
               const SizedBox(width: 8),
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: _solving ? null : _suggestRecipe,
-                  icon: _solving
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.auto_fix_high),
-                  label: Text(_solving ? 'Solving…' : 'Suggest recipe'),
+                  onPressed: () => context.push('/match/swatch'),
+                  icon: const Icon(Icons.photo_camera_outlined),
+                  label: const Text('Check swatch'),
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: _solving ? null : _suggestRecipe,
+              icon: _solving
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.auto_fix_high),
+              label: Text(_solving ? 'Solving…' : 'Suggest recipe'),
+            ),
           ),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,

@@ -49,6 +49,13 @@ class MixScreen extends ConsumerWidget {
                 ),
               ),
               PopupMenuItem(
+                value: '/match/swatch',
+                child: ListTile(
+                  leading: Icon(Icons.photo_camera_outlined),
+                  title: Text('Swatch check'),
+                ),
+              ),
+              PopupMenuItem(
                 value: '/light-booth',
                 child: ListTile(
                   leading: Icon(Icons.wb_incandescent_outlined),

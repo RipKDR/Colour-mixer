@@ -6,6 +6,7 @@ import '../features/canvas/canvas_screen.dart';
 import '../features/catalog/brand_catalog_screen.dart';
 import '../features/match/color_match_screen.dart';
 import '../features/match/photo_eyedropper_screen.dart';
+import '../features/swatch/swatch_capture_screen.dart';
 import '../features/glaze/glaze_screen.dart';
 import '../features/light_booth/light_booth_screen.dart';
 import '../features/inventory/inventory_screen.dart';
@@ -85,6 +86,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: 'eyedropper',
             builder: (_, __) => const PhotoEyedropperScreen(),
+          ),
+          GoRoute(
+            path: 'swatch',
+            builder: (_, __) => const SwatchCaptureScreen(),
           ),
         ],
       ),

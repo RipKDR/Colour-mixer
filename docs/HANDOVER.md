@@ -8,7 +8,7 @@ cwd: "/agent"
 repository: "RipKDR/Colour-mixer"
 branch: "main"
 head: "eb5f437"
-resume_focus: "Continue Phase 4: AR swatch capture, Android device build, or solver refinements"
+resume_focus: "Android device build, iOS build on Mac, or golden screen tests"
 ---
 
 # Session Handover
@@ -110,13 +110,11 @@ and never echo tokens.
 
 1. **Android device build** — install `cargo-ndk` + NDK, run
    `./tools/build_mobile.sh android`, test the native engine on a device/emulator.
-2. **AR swatch capture** — roadmap Phase 4 item; camera-based capture of painted
-   swatches to compare against a mix (builds on the eyedropper infrastructure).
-3. **Solver quality** — weighted objective (e.g. penalise many-pigment recipes),
-   respect opacity/tinting strength, surface 2–3 alternative recipes instead of one.
-4. **Golden/widget tests** for the main screens (only one widget test exists).
-5. **Repo hygiene** — consolidate `data/` vs `assets/data/`, add LICENSE file
-   (README references a license section but no file exists).
+2. **iOS build** — needs a Mac with Xcode; validate `chroma_engine_ffi` podspec.
+3. **Golden tests** for palette shader and key screens (widget tests now cover
+   Mix, Color Match, and Recipes empty state).
+4. **Measured pigment spectra** — replace synthetic curves in `data/pigments/`.
+5. **Camera colour management** for eyedropper/swatch capture (currently assumes sRGB).
 
 ## Authoritative references
 
