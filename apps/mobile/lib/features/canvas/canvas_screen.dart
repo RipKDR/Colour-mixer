@@ -20,24 +20,33 @@ class CanvasState {
   const CanvasState({
     this.strokes = const [],
     this.undoStack = const [],
+    this.activeStroke,
     this.brushSize = 12.0,
     this.brushOpacity = 1.0,
   });
 
   final List<CanvasStroke> strokes;
   final List<CanvasStroke> undoStack;
+
+  /// Stroke currently being drawn; kept out of [strokes] until the gesture
+  /// ends so drag updates don't accumulate stale copies.
+  final CanvasStroke? activeStroke;
   final double brushSize;
   final double brushOpacity;
 
   CanvasState copyWith({
     List<CanvasStroke>? strokes,
     List<CanvasStroke>? undoStack,
+    CanvasStroke? activeStroke,
+    bool clearActiveStroke = false,
     double? brushSize,
     double? brushOpacity,
   }) {
     return CanvasState(
       strokes: strokes ?? this.strokes,
       undoStack: undoStack ?? this.undoStack,
+      activeStroke:
+          clearActiveStroke ? null : (activeStroke ?? this.activeStroke),
       brushSize: brushSize ?? this.brushSize,
       brushOpacity: brushOpacity ?? this.brushOpacity,
     );
@@ -54,24 +63,24 @@ class CanvasNotifier extends StateNotifier<CanvasState> {
       points: [StrokePoint(position, state.brushSize)],
       color: color.withValues(alpha: state.brushOpacity),
     );
+    state = state.copyWith(activeStroke: _currentStroke);
   }
 
   void extendStroke(Offset position) {
     if (_currentStroke == null) return;
     final points = [..._currentStroke!.points, StrokePoint(position, state.brushSize)];
     _currentStroke = CanvasStroke(points: points, color: _currentStroke!.color);
-    state = state.copyWith(strokes: [...state.strokes, _currentStroke!]);
+    state = state.copyWith(activeStroke: _currentStroke);
   }
 
   void endStroke() {
     if (_currentStroke != null) {
-      final strokes = [...state.strokes];
-      if (strokes.isNotEmpty) strokes.removeLast();
-      strokes.add(_currentStroke!);
+      final strokes = [...state.strokes, _currentStroke!];
       if (strokes.length > 50) strokes.removeAt(0);
       state = state.copyWith(
         strokes: strokes,
         undoStack: [],
+        clearActiveStroke: true,
       );
     }
     _currentStroke = null;
@@ -160,6 +169,7 @@ class CanvasScreen extends ConsumerWidget {
                       size: Size(constraints.maxWidth, constraints.maxHeight),
                       painter: _CanvasPainter(
                         strokes: canvas.strokes,
+                        activeStroke: canvas.activeStroke,
                         backgroundColor: const Color(0xFFF5F0E8),
                       ),
                     ),
@@ -182,9 +192,14 @@ class CanvasScreen extends ConsumerWidget {
 }
 
 class _CanvasPainter extends CustomPainter {
-  _CanvasPainter({required this.strokes, required this.backgroundColor});
+  _CanvasPainter({
+    required this.strokes,
+    required this.activeStroke,
+    required this.backgroundColor,
+  });
 
   final List<CanvasStroke> strokes;
+  final CanvasStroke? activeStroke;
   final Color backgroundColor;
 
   @override
@@ -205,35 +220,43 @@ class _CanvasPainter extends CustomPainter {
     }
 
     for (final stroke in strokes) {
-      if (stroke.points.length < 2) {
-        if (stroke.points.isNotEmpty) {
-          final p = stroke.points.first;
-          canvas.drawCircle(
-            p.offset,
-            p.width / 2,
-            Paint()..color = stroke.color,
-          );
-        }
-        continue;
-      }
-      final path = Path()..moveTo(stroke.points.first.offset.dx, stroke.points.first.offset.dy);
-      for (var i = 1; i < stroke.points.length; i++) {
-        path.lineTo(stroke.points[i].offset.dx, stroke.points[i].offset.dy);
-      }
-      canvas.drawPath(
-        path,
-        Paint()
-          ..color = stroke.color
-          ..strokeWidth = stroke.points.first.width
-          ..style = PaintingStyle.stroke
-          ..strokeCap = StrokeCap.round
-          ..strokeJoin = StrokeJoin.round,
-      );
+      _drawStroke(canvas, stroke);
+    }
+    if (activeStroke != null) {
+      _drawStroke(canvas, activeStroke!);
     }
   }
 
+  void _drawStroke(Canvas canvas, CanvasStroke stroke) {
+    if (stroke.points.length < 2) {
+      if (stroke.points.isNotEmpty) {
+        final p = stroke.points.first;
+        canvas.drawCircle(
+          p.offset,
+          p.width / 2,
+          Paint()..color = stroke.color,
+        );
+      }
+      return;
+    }
+    final path = Path()..moveTo(stroke.points.first.offset.dx, stroke.points.first.offset.dy);
+    for (var i = 1; i < stroke.points.length; i++) {
+      path.lineTo(stroke.points[i].offset.dx, stroke.points[i].offset.dy);
+    }
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = stroke.color
+        ..strokeWidth = stroke.points.first.width
+        ..style = PaintingStyle.stroke
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round,
+    );
+  }
+
   @override
-  bool shouldRepaint(covariant _CanvasPainter old) => old.strokes != strokes;
+  bool shouldRepaint(covariant _CanvasPainter old) =>
+      old.strokes != strokes || old.activeStroke != activeStroke;
 }
 
 class _BrushToolbar extends StatelessWidget {

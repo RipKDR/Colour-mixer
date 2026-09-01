@@ -34,6 +34,11 @@ class _PhotoEyedropperScreenState extends ConsumerState<PhotoEyedropperScreen> {
     final bytes = await file.readAsBytes();
     final image = await decodeImageFromList(bytes);
     final pixels = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
+    if (!mounted) {
+      image.dispose();
+      return;
+    }
+    _image?.dispose();
     setState(() {
       _image = image;
       _pixels = pixels;
@@ -41,6 +46,12 @@ class _PhotoEyedropperScreenState extends ConsumerState<PhotoEyedropperScreen> {
       _sampledLab = null;
       _tapLocal = null;
     });
+  }
+
+  @override
+  void dispose() {
+    _image?.dispose();
+    super.dispose();
   }
 
   /// Maps a tap inside the BoxFit.contain viewport to image pixel space.

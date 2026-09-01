@@ -113,7 +113,9 @@ class RecipesScreen extends ConsumerWidget {
       ),
     );
 
-    if (saved != true || nameController.text.isEmpty) return;
+    final name = nameController.text;
+    nameController.dispose();
+    if (saved != true || name.isEmpty || !context.mounted) return;
 
     final pigmentData = jsonEncode(session.entries
         .map((e) => {'id': e.pigmentId, 'weight': e.weight})
@@ -121,7 +123,7 @@ class RecipesScreen extends ConsumerWidget {
 
     await ref.read(databaseProvider).insertRecipe(
           MixRecipesCompanion.insert(
-            name: nameController.text,
+            name: name,
             pigmentData: pigmentData,
             labL: result.lab.l,
             labA: result.lab.a,
@@ -130,31 +132,34 @@ class RecipesScreen extends ConsumerWidget {
           ),
         );
 
+    if (!context.mounted) return;
     refreshRecipes(ref);
-
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Recipe saved')),
-      );
-    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Recipe saved')),
+    );
   }
 
   void _loadRecipe(BuildContext context, WidgetRef ref, MixRecipe recipe) {
-    final data =
-        (jsonDecode(recipe.pigmentData) as List).cast<Map<String, dynamic>>();
-    final entries = data
-        .map((d) => MixEntry(
-              pigmentId: d['id'] as String,
-              weight: (d['weight'] as num).toDouble(),
-            ))
-        .toList();
-    ref.read(mixSessionProvider.notifier).setEntriesFromPalette(entries);
-
-    if (context.mounted) {
+    final List<MixEntry> entries;
+    try {
+      final data =
+          (jsonDecode(recipe.pigmentData) as List).cast<Map<String, dynamic>>();
+      entries = data
+          .map((d) => MixEntry(
+                pigmentId: d['id'] as String,
+                weight: (d['weight'] as num).toDouble(),
+              ))
+          .toList();
+    } catch (_) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Loaded "${recipe.name}"')),
+        const SnackBar(content: Text('Recipe data is corrupted')),
       );
+      return;
     }
+    ref.read(mixSessionProvider.notifier).setEntriesFromPalette(entries);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Loaded "${recipe.name}"')),
+    );
   }
 
   Future<void> _shareRecipe(MixRecipe recipe) async {
@@ -217,10 +222,11 @@ class RecipesScreen extends ConsumerWidget {
       ),
     );
 
-    if (action == null || action == 'cancel') return;
+    if (action == null || action == 'cancel' || !context.mounted) return;
 
     if (action == 'save') {
       await saveParsedRecipe(ref.read(databaseProvider), parsed);
+      if (!context.mounted) return;
       refreshRecipes(ref);
     }
 
@@ -228,11 +234,9 @@ class RecipesScreen extends ConsumerWidget {
       ref.read(mixSessionProvider.notifier).setEntriesFromPalette(parsed.entries);
     }
 
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Imported "${parsed.name}"')),
-      );
-    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Imported "${parsed.name}"')),
+    );
   }
 }
 

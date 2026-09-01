@@ -68,6 +68,11 @@ class AppDatabase extends _$AppDatabase {
             await m.createTable(lessonProgress);
           }
         },
+        beforeOpen: (details) async {
+          // SQLite ships with foreign keys OFF; without this, the cascade
+          // declared on RecipeTags.recipeId is silently ignored.
+          await customStatement('PRAGMA foreign_keys = ON');
+        },
       );
 
   Future<List<MixRecipe>> getAllRecipes() =>

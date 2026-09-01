@@ -300,18 +300,17 @@ class _LessonDetailScreenState extends ConsumerState<LessonDetailScreen> {
     await db.upsertLessonProgress(
       LessonProgressCompanion.insert(
         lessonId: widget.lesson.id,
-        completed: Value(deltaE < 5),
+        // A worse re-attempt must never take away an earned completion.
+        completed: Value((existing?.completed ?? false) || deltaE < 5),
         bestDeltaE: Value(best),
         attempts: Value(attempts),
       ),
     );
+    if (!mounted) return;
     ref.invalidate(lessonProgressProvider);
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(scoreLabel(deltaE))),
-      );
-    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(scoreLabel(deltaE))),
+    );
   }
 }
 

@@ -17,32 +17,9 @@ class MixScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Mix'),
+        // Five icons plus the segmented button overflow a phone-width app
+        // bar, so the tool shortcuts live in a single menu.
         actions: [
-          IconButton(
-            icon: const Icon(Icons.gps_fixed),
-            tooltip: 'Color match',
-            onPressed: () => context.push('/match'),
-          ),
-          IconButton(
-            icon: const Icon(Icons.wb_incandescent_outlined),
-            tooltip: 'Light booth',
-            onPressed: () => context.push('/light-booth'),
-          ),
-          IconButton(
-            icon: const Icon(Icons.layers_outlined),
-            tooltip: 'Glaze simulator',
-            onPressed: () => context.push('/glaze'),
-          ),
-          IconButton(
-            icon: const Icon(Icons.store_outlined),
-            tooltip: 'Brand catalog',
-            onPressed: () => context.push('/catalog'),
-          ),
-          IconButton(
-            icon: const Icon(Icons.photo_outlined),
-            tooltip: 'Painting preview',
-            onPressed: () => context.push('/preview'),
-          ),
           SegmentedButton<MixMode>(
             segments: const [
               ButtonSegment(
@@ -59,7 +36,49 @@ class MixScreen extends ConsumerWidget {
             selected: {mode},
             onSelectionChanged: (s) => notifier.setMode(s.first),
           ),
-          const SizedBox(width: 8),
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.handyman_outlined),
+            tooltip: 'Tools',
+            onSelected: (route) => context.push(route),
+            itemBuilder: (_) => const [
+              PopupMenuItem(
+                value: '/match',
+                child: ListTile(
+                  leading: Icon(Icons.gps_fixed),
+                  title: Text('Color match'),
+                ),
+              ),
+              PopupMenuItem(
+                value: '/light-booth',
+                child: ListTile(
+                  leading: Icon(Icons.wb_incandescent_outlined),
+                  title: Text('Light booth'),
+                ),
+              ),
+              PopupMenuItem(
+                value: '/glaze',
+                child: ListTile(
+                  leading: Icon(Icons.layers_outlined),
+                  title: Text('Glaze simulator'),
+                ),
+              ),
+              PopupMenuItem(
+                value: '/catalog',
+                child: ListTile(
+                  leading: Icon(Icons.store_outlined),
+                  title: Text('Brand catalog'),
+                ),
+              ),
+              PopupMenuItem(
+                value: '/preview',
+                child: ListTile(
+                  leading: Icon(Icons.photo_outlined),
+                  title: Text('Painting preview'),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(width: 4),
         ],
       ),
       body: mode == MixMode.palette

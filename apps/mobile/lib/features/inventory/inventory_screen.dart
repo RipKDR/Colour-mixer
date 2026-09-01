@@ -191,17 +191,24 @@ class InventoryScreen extends ConsumerWidget {
       ),
     );
 
-    if (saved != true || selectedId == null) return;
+    final brand = brandCtrl.text;
+    final line = lineCtrl.text;
+    final price = double.tryParse(priceCtrl.text) ?? 0;
+    brandCtrl.dispose();
+    lineCtrl.dispose();
+    priceCtrl.dispose();
+    if (saved != true || selectedId == null || !context.mounted) return;
 
     await ref.read(databaseProvider).insertInventory(
           InventoryItemsCompanion.insert(
             pigmentId: selectedId!,
-            brand: Value(brandCtrl.text),
-            line: Value(lineCtrl.text),
-            pricePerTube: Value(double.tryParse(priceCtrl.text) ?? 0),
+            brand: Value(brand),
+            line: Value(line),
+            pricePerTube: Value(price),
             amountLeft: Value(amount),
           ),
         );
+    if (!context.mounted) return;
     refreshInventory(ref);
   }
 }

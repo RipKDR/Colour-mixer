@@ -48,7 +48,14 @@ pub fn format_ratios(weights: &[f64], unit: QuantityUnit, density: f64) -> Vec<R
             .collect();
     }
 
-    let min_g = grams.iter().cloned().fold(f64::INFINITY, f64::min);
+    // Base "parts" on the smallest non-zero component so one empty entry
+    // doesn't zero out every row.
+    let min_g = grams
+        .iter()
+        .cloned()
+        .filter(|&g| g > 0.0)
+        .fold(f64::INFINITY, f64::min);
+    let min_g = if min_g.is_finite() { min_g } else { 0.0 };
     grams
         .iter()
         .map(|&g| {
@@ -70,6 +77,13 @@ mod tests {
     #[test]
     fn drops_convert_to_grams() {
         assert!((QuantityUnit::Drops.to_grams(10.0, 1.0) - 0.5).abs() < 0.001);
+    }
+
+    #[test]
+    fn zero_weight_does_not_zero_all_parts() {
+        let rows = format_ratios(&[2.0, 0.0, 1.0], QuantityUnit::Parts, 1.0);
+        assert_eq!(rows[0].parts, "2.0");
+        assert_eq!(rows[2].parts, "1.0");
     }
 
     #[test]

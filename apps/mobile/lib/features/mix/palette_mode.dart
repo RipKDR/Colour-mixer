@@ -36,7 +36,14 @@ class _PaletteModeScreenState extends ConsumerState<PaletteModeScreen> {
   final List<List<PaintBlob>> _undoStack = [];
   Offset? _knifePosition;
   bool _isMixing = false;
+  bool _dragDidPush = false;
   ui.FragmentShader? _mixShader;
+
+  @override
+  void dispose() {
+    _mixShader?.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -118,12 +125,22 @@ class _PaletteModeScreenState extends ConsumerState<PaletteModeScreen> {
     });
   }
 
+  void _onPanStart(DragStartDetails details) {
+    hapticLight();
+    // Snapshot BEFORE the drag mutates blobs, so undo restores pre-drag state.
+    _pushUndo();
+    _dragDidPush = true;
+  }
+
   void _onPanEnd(DragEndDetails details) {
     if (_isMixing) {
       hapticMedium();
-      _pushUndo();
       _syncToSession();
+    } else if (_dragDidPush) {
+      // Nothing changed; drop the speculative snapshot.
+      _undoStack.removeLast();
     }
+    _dragDidPush = false;
     setState(() {
       _knifePosition = null;
       _isMixing = false;
@@ -138,6 +155,8 @@ class _PaletteModeScreenState extends ConsumerState<PaletteModeScreen> {
         final dist = (a.position - b.position).distance;
         if (dist < (a.radius + b.radius) * 0.7) {
           hapticLight();
+          // B keeps its own blob below, so the merged blob must carry only
+          // A's weight or B's contribution gets counted twice in the mix.
           final merged = PaintBlob(
             pigmentId: a.pigmentId,
             position: Offset(
@@ -145,7 +164,7 @@ class _PaletteModeScreenState extends ConsumerState<PaletteModeScreen> {
               (a.position.dy + b.position.dy) / 2,
             ),
             radius: math.min(a.radius + b.radius * 0.3, 70),
-            weight: a.weight + b.weight,
+            weight: a.weight,
           );
           _blobs.removeAt(j);
           _blobs.removeAt(i);
@@ -210,11 +229,13 @@ class _PaletteModeScreenState extends ConsumerState<PaletteModeScreen> {
                       onPanUpdate: (d) =>
                           _onPanUpdate(d, constraints.biggest),
                       onPanEnd: _onPanEnd,
-                      onPanStart: (_) => hapticLight(),
+                      onPanStart: _onPanStart,
                       child: CustomPaint(
                         size: Size(constraints.maxWidth, constraints.maxHeight),
                         painter: _PalettePainter(
-                          blobs: _blobs,
+                          // Copy so shouldRepaint sees a new identity when
+                          // blobs are added/merged/undone in place.
+                          blobs: List.of(_blobs),
                           engine: engine,
                           knifePosition: _knifePosition,
                           mixColor: result?.color,
@@ -371,6 +392,7 @@ class _PalettePainter extends CustomPainter {
       old.blobs != blobs ||
       old.knifePosition != knifePosition ||
       old.isMixing != isMixing ||
+      old.mixColor != mixColor ||
       old.mixShader != mixShader ||
       old.blendColorA != blendColorA ||
       old.blendColorB != blendColorB;

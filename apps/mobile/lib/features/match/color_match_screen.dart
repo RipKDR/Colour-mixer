@@ -51,8 +51,9 @@ class _ColorMatchScreenState extends ConsumerState<ColorMatchScreen> {
 
   Future<void> _openEyedropper() async {
     await context.push('/match/eyedropper');
+    if (!mounted) return;
     final picked = ref.read(colorTargetProvider);
-    if (picked != null && mounted) {
+    if (picked != null) {
       setState(() {
         _l = picked.lab.l;
         _a = picked.lab.a;
@@ -82,17 +83,23 @@ class _ColorMatchScreenState extends ConsumerState<ColorMatchScreen> {
     }
 
     setState(() => _solving = true);
-    final suggestion = await compute(
-      solveMixRequest,
-      SolveRequest(
-        pigments: {for (final p in engine.allPigments) p.id: p},
-        target: target,
-        restrictTo: restrictTo,
-      ),
-    );
+    MixSuggestion? suggestion;
+    try {
+      suggestion = await compute(
+        solveMixRequest,
+        SolveRequest(
+          pigments: {for (final p in engine.allPigments) p.id: p},
+          target: target,
+          restrictTo: restrictTo,
+        ),
+      );
+    } finally {
+      // Always re-enable the button, even if the isolate fails.
+      if (mounted) setState(() => _solving = false);
+    }
     if (!mounted) return;
-    setState(() => _solving = false);
-    if (suggestion == null) {
+    final result = suggestion;
+    if (result == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('No pigments available to suggest from')),
       );
@@ -103,11 +110,11 @@ class _ColorMatchScreenState extends ConsumerState<ColorMatchScreen> {
       context: context,
       showDragHandle: true,
       builder: (sheetContext) => _SuggestionSheet(
-        suggestion: suggestion,
+        suggestion: result,
         engine: engine,
         onLoad: () {
           ref.read(mixSessionProvider.notifier).setEntriesFromPalette([
-            for (final c in suggestion.components)
+            for (final c in result.components)
               MixEntry(pigmentId: c.pigmentId, weight: c.weight * 10),
           ]);
           ref.read(colorTargetProvider.notifier).state = ColorTarget(

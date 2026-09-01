@@ -27,6 +27,7 @@ class _PreviewScreenState extends ConsumerState<PreviewScreen> {
     final file = await picker.pickImage(source: source, maxWidth: 2048);
     if (file == null) return;
     final bytes = await file.readAsBytes();
+    if (!mounted) return;
     setState(() => _imageBytes = bytes);
   }
 

@@ -216,11 +216,10 @@ pub fn ciede2000(lab1: (f64, f64, f64), lab2: (f64, f64, f64)) -> f64 {
     let sc = 1.0 + 0.045 * c_barp;
     let sh = 1.0 + 0.015 * c_barp * t;
 
-    let rt = -2.0
-        * (c_barp.powi(7) / (c_barp.powi(7) + 25.0_f64.powi(7))).sqrt()
-        * ((60.0 * (-((h_bar - 275.0) / 25.0).powi(2))).to_radians())
-            .exp()
-            * (h_bar.to_radians() * 2.0).sin();
+    // Rotation term (Sharma 2005): only active for high-chroma blues near 275°.
+    let d_theta = 30.0 * (-((h_bar - 275.0) / 25.0).powi(2)).exp();
+    let rc = 2.0 * (c_barp.powi(7) / (c_barp.powi(7) + 25.0_f64.powi(7))).sqrt();
+    let rt = -rc * (2.0 * d_theta).to_radians().sin();
 
     let kl = 1.0;
     let kc = 1.0;
@@ -253,6 +252,27 @@ pub fn lab_to_srgb(l: f64, a: f64, b: f64) -> (f64, f64, f64) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn ciede2000_matches_sharma_2005_reference_pairs() {
+        // (L1,a1,b1), (L2,a2,b2), expected dE00 — Sharma et al. (2005).
+        let cases = [
+            ((50.0, 2.6772, -79.7751), (50.0, 0.0, -82.7485), 2.0425),
+            ((50.0, 3.1571, -77.2803), (50.0, 0.0, -82.7485), 2.8615),
+            ((50.0, 2.8361, -74.0200), (50.0, 0.0, -82.7485), 3.4412),
+            ((50.0, -1.3802, -84.2814), (50.0, 0.0, -82.7485), 1.0000),
+            ((50.0, -1.1848, -84.8006), (50.0, 0.0, -82.7485), 1.0000),
+            ((50.0, -0.9009, -85.5211), (50.0, 0.0, -82.7485), 1.0000),
+            ((50.0, 0.0, 0.0), (50.0, -1.0, 2.0), 2.3669),
+        ];
+        for (lab1, lab2, expected) in cases {
+            let de = ciede2000(lab1, lab2);
+            assert!(
+                (de - expected).abs() < 0.0001,
+                "pair {lab1:?} vs {lab2:?}: got {de}, expected {expected}"
+            );
+        }
+    }
 
     #[test]
     fn white_reflectance_is_high() {

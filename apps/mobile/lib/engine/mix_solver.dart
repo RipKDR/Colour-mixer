@@ -121,8 +121,10 @@ class MixSolver {
           }
         }
       }
-      if (!improved) step = step > 1.2 ? step * 0.6 : step;
-      if (step <= 1.05) break;
+      if (!improved) {
+        step *= 0.6;
+        if (step <= 1.05) break;
+      }
     }
 
     final total = weights.fold<double>(0, (s, w) => s + w);

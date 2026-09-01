@@ -27,7 +27,10 @@ class PigmentModel {
   final Color color;
 
   factory PigmentModel.fromJson(Map<String, dynamic> json) {
-    final reflectance = (json['reflectance'] as List).cast<double>();
+    // Tolerate integer JSON values (e.g. `1` instead of `1.0`).
+    final reflectance = (json['reflectance'] as List)
+        .map((v) => (v as num).toDouble())
+        .toList();
     final lab = Colorimetry.spectrumToLab(reflectance);
     final srgb = Colorimetry.spectrumToSrgb(reflectance);
     return PigmentModel(
@@ -356,10 +359,11 @@ class Colorimetry {
     final sc = 1 + 0.045 * cBarp;
     final sh = 1 + 0.015 * cBarp * t;
 
-    final rt = -2 *
-        math.sqrt(math.pow(cBarp, 7) / (math.pow(cBarp, 7) + math.pow(25, 7))) *
-        math.exp(-math.pow((hBar - 275) / 25, 2) * 60 * math.pi / 180) *
-        math.sin(2 * hBar * math.pi / 180);
+    // Rotation term (Sharma 2005): only active for high-chroma blues near 275°.
+    final dTheta = 30 * math.exp(-math.pow((hBar - 275) / 25, 2));
+    final rc = 2 *
+        math.sqrt(math.pow(cBarp, 7) / (math.pow(cBarp, 7) + math.pow(25, 7)));
+    final rt = -rc * math.sin(2 * dTheta * math.pi / 180);
 
     final term1 = math.pow(dl / sl, 2);
     final term2 = math.pow(dc / sc, 2);
@@ -478,14 +482,17 @@ List<RatioDisplay> formatRatios(List<double> weights, QuantityUnit unit) {
         .map((_) => const RatioDisplay(parts: '0', percent: '0%', grams: '0g'))
         .toList();
   }
-  final minG = grams.reduce(math.min);
+  // Base "parts" on the smallest non-zero component so one empty slider
+  // doesn't zero out every row.
+  final positive = grams.where((g) => g > 0);
+  final minG = positive.isEmpty ? 0.0 : positive.reduce(math.min);
   return List.generate(weights.length, (i) {
     final partsVal = minG > 0 ? grams[i] / minG : 0.0;
     final pct = grams[i] / total * 100;
     return RatioDisplay(
       parts: partsVal.toStringAsFixed(1),
       percent: '${pct.toStringAsFixed(1)}%',
-      grams: '${weights[i].toStringAsFixed(2)}g',
+      grams: '${grams[i].toStringAsFixed(2)}g',
     );
   });
 }

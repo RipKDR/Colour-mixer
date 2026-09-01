@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/settings_provider.dart';
 import '../../core/theme.dart';
+import '../../engine/chroma_engine.dart';
 import '../../engine/mix_session.dart';
 import '../../engine/native_engine.dart';
 
@@ -37,13 +38,26 @@ class SettingsScreen extends ConsumerWidget {
           const _SectionHeader('Units'),
           ListTile(
             title: const Text('Default quantity unit'),
-            subtitle: Text(ref.watch(quantityUnitProvider)),
-            trailing: DropdownButton<String>(
+            subtitle: Text(ref.watch(quantityUnitProvider).name),
+            trailing: DropdownButton<QuantityUnit>(
               value: ref.watch(quantityUnitProvider),
               items: const [
-                DropdownMenuItem(value: 'parts', child: Text('Parts')),
-                DropdownMenuItem(value: 'grams', child: Text('Grams')),
-                DropdownMenuItem(value: 'drops', child: Text('Drops')),
+                DropdownMenuItem(
+                  value: QuantityUnit.parts,
+                  child: Text('Parts'),
+                ),
+                DropdownMenuItem(
+                  value: QuantityUnit.grams,
+                  child: Text('Grams'),
+                ),
+                DropdownMenuItem(
+                  value: QuantityUnit.milliliters,
+                  child: Text('Millilitres'),
+                ),
+                DropdownMenuItem(
+                  value: QuantityUnit.drops,
+                  child: Text('Drops'),
+                ),
               ],
               onChanged: (v) {
                 if (v != null) {

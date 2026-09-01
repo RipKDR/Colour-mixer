@@ -73,6 +73,18 @@ void main() {
       expect(tinted.lab.l, greaterThan(pure.lab.l));
     });
 
+    test('formatRatios converts units in the grams column', () {
+      // 10 drops at 0.05 g/drop must display 0.50g, not the raw 10.00.
+      final rows = formatRatios([10.0], QuantityUnit.drops);
+      expect(rows[0].grams, '0.50g');
+    });
+
+    test('formatRatios ignores zero weights when computing parts', () {
+      final rows = formatRatios([2.0, 0.0, 1.0], QuantityUnit.parts);
+      expect(rows[0].parts, '2.0');
+      expect(rows[2].parts, '1.0');
+    });
+
     test('formatRatios produces valid output', () {
       final ratios = formatRatios([1, 2, 1], QuantityUnit.parts);
       expect(ratios.length, 3);

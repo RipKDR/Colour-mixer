@@ -23,9 +23,19 @@ class _GlazeScreenState extends ConsumerState<GlazeScreen> {
     final result = ref.watch(mixSessionProvider).result;
     final glazeReflectance = result?.reflectance ??
         List<double>.filled(Colorimetry.spectrumSamples, 0.5);
-    final baseReflectance = List<double>.filled(
+    // Crude 3-band spectrum from the base colour so hue survives (a flat
+    // spectrum from one channel would turn a blue base into gray).
+    final baseReflectance = List<double>.generate(
       Colorimetry.spectrumSamples,
-      _baseColor.r * 0.9 + 0.05,
+      (i) {
+        final wl = 380 + i * 10;
+        final channel = wl < 490
+            ? _baseColor.b
+            : wl < 590
+                ? _baseColor.g
+                : _baseColor.r;
+        return channel * 0.9 + 0.05;
+      },
     );
 
     final glazed = GlazeSimulator.glazeColor(
@@ -119,7 +129,7 @@ class _GlazeScreenState extends ConsumerState<GlazeScreen> {
         ),
       ),
     );
-    if (picked != null) setState(() => _baseColor = picked);
+    if (picked != null && mounted) setState(() => _baseColor = picked);
   }
 }
 

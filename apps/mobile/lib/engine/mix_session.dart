@@ -1,7 +1,9 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/settings_provider.dart';
 import 'catalog.dart';
 import 'chroma_engine.dart';
 import 'mediums.dart';
@@ -199,15 +201,17 @@ class MixSessionNotifier extends StateNotifier<MixSessionState> {
   void setWeight(int index, double weight) {
     if (weight < 0) weight = 0;
     final entries = [...state.entries];
-    if (state.lockRatios && entries.isNotEmpty) {
-      final total = entries.fold<double>(0, (s, e) => s + e.weight);
-      final ratio = total > 0 ? entries[index].weight / total : 0;
-      final newTotal = ratio == 0 ? weight : weight / ratio;
+    final total = entries.fold<double>(0, (s, e) => s + e.weight);
+    final ratio = total > 0 ? entries[index].weight / total : 0.0;
+    if (state.lockRatios && entries.isNotEmpty && ratio > 0) {
+      final newTotal = weight / ratio;
       for (var i = 0; i < entries.length; i++) {
-        final r = total > 0 ? entries[i].weight / total : 0;
+        final r = entries[i].weight / total;
         entries[i].weight = newTotal * r;
       }
     } else {
+      // Unlocked, or the dragged entry is at zero (a zero ratio cannot be
+      // scaled, so set it directly to let the user raise it again).
       entries[index].weight = weight;
     }
     state = state.copyWith(entries: entries);
@@ -231,14 +235,20 @@ class MixSessionNotifier extends StateNotifier<MixSessionState> {
         .where((e) => e.weight > 0)
         .map((e) => MixComponent(pigmentId: e.pigmentId, weight: e.weight))
         .toList();
-    final result = _computeMix(
-      backend,
-      _mediums,
-      components,
-      state.mediumId,
-      state.mediumAmount,
-    );
-    state = state.copyWith(result: result);
+    // Runs in a Timer callback: an uncaught error here would be unhandled
+    // and silently freeze mix updates, so keep the previous result instead.
+    try {
+      final result = _computeMix(
+        backend,
+        _mediums,
+        components,
+        state.mediumId,
+        state.mediumAmount,
+      );
+      state = state.copyWith(result: result);
+    } catch (e) {
+      debugPrint('ChromaStudio: mix recompute failed: $e');
+    }
   }
 
   @override
@@ -248,15 +258,35 @@ class MixSessionNotifier extends StateNotifier<MixSessionState> {
   }
 }
 
+/// Backend and medium library resolved together, so [mixSessionProvider]
+/// rebuilds exactly once (placeholder -> ready) and never wipes a live
+/// session when the mediums finish loading later.
+final _sessionDepsProvider =
+    FutureProvider<(EngineBackend, MediumLibrary?)>((ref) async {
+  final backend = await ref.watch(engineBackendProvider.future);
+  MediumLibrary? mediums;
+  try {
+    mediums = await ref.watch(mediumLibraryProvider.future);
+  } catch (_) {
+    mediums = null;
+  }
+  return (backend, mediums);
+});
+
 final mixSessionProvider =
     StateNotifierProvider<MixSessionNotifier, MixSessionState>((ref) {
-  final backendAsync = ref.watch(engineBackendProvider);
-  final mediumsAsync = ref.watch(mediumLibraryProvider);
-  return backendAsync.when(
-    data: (backend) => MixSessionNotifier(
-      backend,
-      mediumsAsync.valueOrNull,
-    ),
+  final deps = ref.watch(_sessionDepsProvider);
+  return deps.when(
+    data: (d) {
+      final notifier = MixSessionNotifier(d.$1, d.$2);
+      // Keep the session's display unit in sync with the Settings choice
+      // without rebuilding (and wiping) the session.
+      notifier.setQuantityUnit(ref.read(quantityUnitProvider));
+      ref.listen(quantityUnitProvider, (_, next) {
+        notifier.setQuantityUnit(next);
+      });
+      return notifier;
+    },
     loading: () => MixSessionNotifier._placeholder(),
     error: (_, __) => MixSessionNotifier._placeholder(),
   );
