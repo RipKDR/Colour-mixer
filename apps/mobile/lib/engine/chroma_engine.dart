@@ -240,16 +240,33 @@ class Colorimetry {
     return xyzToSrgb(x, y, z);
   }
 
+  /// Convert gamma-encoded sRGB (0..1 components) to Lab under D65.
+  static LabColor srgbToLab(double r, double g, double b) {
+    double linear(double c) =>
+        c <= 0.04045 ? c / 12.92 : math.pow((c + 0.055) / 1.055, 2.4).toDouble();
+    final rl = linear(r.clamp(0.0, 1.0));
+    final gl = linear(g.clamp(0.0, 1.0));
+    final bl = linear(b.clamp(0.0, 1.0));
+    final x = (rl * 0.4124 + gl * 0.3576 + bl * 0.1805) * 100;
+    final y = (rl * 0.2126 + gl * 0.7152 + bl * 0.0722) * 100;
+    final z = (rl * 0.0193 + gl * 0.1192 + bl * 0.9505) * 100;
+    return xyzToLab(x, y, z);
+  }
+
   static (double, double, double) labToSrgb(double l, double a, double b) {
-    double f(double t) =>
-        t > 0.008856 ? math.pow(t, 1 / 3).toDouble() : (903.3 * t + 16) / 116;
+    // Inverse of the Lab nonlinearity: cube when in range, linear otherwise.
+    double fInv(double t) {
+      final cubed = t * t * t;
+      return cubed > 0.008856 ? cubed : (116.0 * t - 16.0) / 903.3;
+    }
+
     const xn = 95.047, yn = 100.0, zn = 108.883;
     final yv = (l + 16) / 116;
     final xv = a / 500 + yv;
     final zv = yv - b / 200;
-    final x = f(xv) * xn;
-    final y = f(yv) * yn;
-    final z = f(zv) * zn;
+    final x = fInv(xv) * xn;
+    final y = fInv(yv) * yn;
+    final z = fInv(zv) * zn;
     return xyzToSrgb(x, y, z);
   }
 

@@ -6,6 +6,7 @@ import '../../core/haptics.dart';
 import '../../core/theme.dart';
 import '../../engine/chroma_engine.dart';
 import '../../engine/mix_session.dart';
+import '../../engine/mix_solver.dart';
 import '../learn/learn_screen.dart' show scoreLabel;
 import 'color_match.dart';
 
@@ -42,6 +43,53 @@ class _ColorMatchScreenState extends ConsumerState<ColorMatchScreen> {
       name: 'Custom target',
     );
     hapticLight();
+  }
+
+  Future<void> _openEyedropper() async {
+    await context.push('/match/eyedropper');
+    final picked = ref.read(colorTargetProvider);
+    if (picked != null && mounted) {
+      setState(() {
+        _l = picked.lab.l;
+        _a = picked.lab.a;
+        _b = picked.lab.b;
+      });
+    }
+  }
+
+  Future<void> _suggestRecipe() async {
+    final engine = ref.read(engineProvider).valueOrNull;
+    if (engine == null) return;
+    final target = LabColor(_l, _a, _b);
+
+    final suggestion = MixSolver(engine).solve(target);
+    if (!mounted) return;
+    if (suggestion == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No pigments available to suggest from')),
+      );
+      return;
+    }
+    hapticMedium();
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => _SuggestionSheet(
+        suggestion: suggestion,
+        engine: engine,
+        onLoad: () {
+          ref.read(mixSessionProvider.notifier).setEntriesFromPalette([
+            for (final c in suggestion.components)
+              MixEntry(pigmentId: c.pigmentId, weight: c.weight * 10),
+          ]);
+          ref.read(colorTargetProvider.notifier).state = ColorTarget(
+            lab: target,
+            name: 'Suggested match',
+          );
+          Navigator.of(sheetContext).pop();
+        },
+      ),
+    );
   }
 
   @override
@@ -203,6 +251,26 @@ class _ColorMatchScreenState extends ConsumerState<ColorMatchScreen> {
               minimumSize: const Size.fromHeight(48),
             ),
           ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _openEyedropper,
+                  icon: const Icon(Icons.colorize),
+                  label: const Text('From photo'),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _suggestRecipe,
+                  icon: const Icon(Icons.auto_fix_high),
+                  label: const Text('Suggest recipe'),
+                ),
+              ),
+            ],
+          ),
           if (analysis != null)
             Padding(
               padding: const EdgeInsets.only(top: 8),
@@ -212,6 +280,86 @@ class _ColorMatchScreenState extends ConsumerState<ColorMatchScreen> {
                 style: Theme.of(context).textTheme.labelLarge,
               ),
             ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SuggestionSheet extends StatelessWidget {
+  const _SuggestionSheet({
+    required this.suggestion,
+    required this.engine,
+    required this.onLoad,
+  });
+
+  final MixSuggestion suggestion;
+  final ChromaEngine engine;
+  final VoidCallback onLoad;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: suggestion.result.color,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Suggested recipe',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    Text(
+                      'Predicted ΔE ${suggestion.deltaE.toStringAsFixed(1)} — '
+                      '${matchScoreLabel(suggestion.deltaE)}',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          ...suggestion.components.map((c) {
+            final pigment = engine.getPigment(c.pigmentId);
+            return ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: CircleAvatar(
+                backgroundColor: pigment?.color ?? Colors.grey,
+                radius: 14,
+              ),
+              title: Text(pigment?.name ?? c.pigmentId),
+              trailing: Text(
+                '${(c.weight * 100).toStringAsFixed(0)}%',
+                style: Theme.of(context).textTheme.titleSmall,
+              ),
+            );
+          }),
+          const SizedBox(height: 8),
+          FilledButton.icon(
+            onPressed: onLoad,
+            icon: const Icon(Icons.download),
+            label: const Text('Load into current mix'),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppTheme.deepBlue,
+              minimumSize: const Size.fromHeight(48),
+            ),
+          ),
         ],
       ),
     );
