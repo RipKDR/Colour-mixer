@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:chromastudio/engine/chroma_engine.dart';
@@ -83,6 +84,47 @@ void main() {
     test('returns null when no pigments available', () {
       final empty = ChromaEngine(const {});
       expect(MixSolver(empty).solve(const LabColor(50, 0, 0)), isNull);
+    });
+
+    test('restrictTo limits suggestions to owned pigments', () {
+      final engine = _testEngine();
+      // Green target normally needs blue+yellow; restrict to yellow+white.
+      final target = engine.mix([
+        const MixComponent(pigmentId: 'blue', weight: 1),
+        const MixComponent(pigmentId: 'yellow', weight: 1),
+      ]).lab;
+
+      final solution = MixSolver(engine).solve(
+        target,
+        restrictTo: {'yellow', 'titanium_white'},
+      );
+
+      expect(solution, isNotNull);
+      for (final c in solution!.components) {
+        expect(['yellow', 'titanium_white'], contains(c.pigmentId));
+      }
+    });
+
+    test('restrictTo with no matching pigments returns null', () {
+      final engine = _testEngine();
+      final solution = MixSolver(engine).solve(
+        const LabColor(50, 0, 0),
+        restrictTo: {'nonexistent'},
+      );
+      expect(solution, isNull);
+    });
+
+    test('solveMixRequest entry point works via compute', () async {
+      final engine = _testEngine();
+      final request = SolveRequest(
+        pigments: {for (final p in engine.allPigments) p.id: p},
+        target: const LabColor(70, 5, 15),
+      );
+
+      final suggestion = await compute(solveMixRequest, request);
+
+      expect(suggestion, isNotNull);
+      expect(suggestion!.components, isNotEmpty);
     });
   });
 }

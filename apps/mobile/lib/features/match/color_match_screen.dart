@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -7,6 +8,7 @@ import '../../core/theme.dart';
 import '../../engine/chroma_engine.dart';
 import '../../engine/mix_session.dart';
 import '../../engine/mix_solver.dart';
+import '../inventory/inventory_provider.dart';
 import '../learn/learn_screen.dart' show scoreLabel;
 import 'color_match.dart';
 
@@ -21,6 +23,8 @@ class _ColorMatchScreenState extends ConsumerState<ColorMatchScreen> {
   double _l = 55;
   double _a = 0;
   double _b = 0;
+  bool _onlyMyPaints = false;
+  bool _solving = false;
 
   @override
   void initState() {
@@ -62,8 +66,32 @@ class _ColorMatchScreenState extends ConsumerState<ColorMatchScreen> {
     if (engine == null) return;
     final target = LabColor(_l, _a, _b);
 
-    final suggestion = MixSolver(engine).solve(target);
+    Set<String>? restrictTo;
+    if (_onlyMyPaints) {
+      final items = await ref.read(inventoryProvider.future);
+      if (!mounted) return;
+      restrictTo = items.map((i) => i.pigmentId).toSet();
+      if (restrictTo.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Your inventory is empty — add tubes in Stock'),
+          ),
+        );
+        return;
+      }
+    }
+
+    setState(() => _solving = true);
+    final suggestion = await compute(
+      solveMixRequest,
+      SolveRequest(
+        pigments: {for (final p in engine.allPigments) p.id: p},
+        target: target,
+        restrictTo: restrictTo,
+      ),
+    );
     if (!mounted) return;
+    setState(() => _solving = false);
     if (suggestion == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('No pigments available to suggest from')),
@@ -264,12 +292,26 @@ class _ColorMatchScreenState extends ConsumerState<ColorMatchScreen> {
               const SizedBox(width: 8),
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: _suggestRecipe,
-                  icon: const Icon(Icons.auto_fix_high),
-                  label: const Text('Suggest recipe'),
+                  onPressed: _solving ? null : _suggestRecipe,
+                  icon: _solving
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.auto_fix_high),
+                  label: Text(_solving ? 'Solving…' : 'Suggest recipe'),
                 ),
               ),
             ],
+          ),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            dense: true,
+            title: const Text('Only suggest from my paints'),
+            subtitle: const Text('Uses your Stock inventory'),
+            value: _onlyMyPaints,
+            onChanged: (v) => setState(() => _onlyMyPaints = v),
           ),
           if (analysis != null)
             Padding(

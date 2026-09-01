@@ -85,6 +85,8 @@ Settings → Mixing engine shows **Rust (native FFI)** when the `.so` is loaded,
 - **Holbein catalog** — 6th brand in paint browser
 - **Mix solver** — "Suggest recipe" searches pigment subsets and refines ratios (coordinate descent on CIEDE2000) to hit a target Lab
 - **Photo eyedropper** — Sample a target colour from a reference photo (3×3 averaged, tap-to-pick)
+- **Inventory-aware solver** — "Only suggest from my paints" restricts suggestions to tubes in Stock
+- **Background solving** — Solver runs in an isolate via `compute()` so the UI stays responsive
 - **Colorimetry fix** — `labToSrgb` now applies the correct inverse Lab nonlinearity (caught by a roundtrip test)
 
 ## License

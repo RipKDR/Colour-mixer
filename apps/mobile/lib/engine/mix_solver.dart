@@ -1,5 +1,30 @@
 import 'chroma_engine.dart';
 
+/// Serializable request so the solver can run in a background isolate
+/// via [compute].
+class SolveRequest {
+  const SolveRequest({
+    required this.pigments,
+    required this.target,
+    this.restrictTo,
+    this.maxPigments = 3,
+  });
+
+  final Map<String, PigmentModel> pigments;
+  final LabColor target;
+  final Set<String>? restrictTo;
+  final int maxPigments;
+}
+
+/// Top-level entry point for `compute()`.
+MixSuggestion? solveMixRequest(SolveRequest request) {
+  return MixSolver(ChromaEngine(request.pigments)).solve(
+    request.target,
+    maxPigments: request.maxPigments,
+    restrictTo: request.restrictTo,
+  );
+}
+
 class MixSuggestion {
   const MixSuggestion({
     required this.components,
@@ -21,8 +46,17 @@ class MixSolver {
 
   final ChromaEngine _engine;
 
-  MixSuggestion? solve(LabColor target, {int maxPigments = 3}) {
-    final pigments = _engine.allPigments;
+  /// [restrictTo] limits the search to the given pigment ids (e.g. the
+  /// user's inventory). Null means all pigments are available.
+  MixSuggestion? solve(
+    LabColor target, {
+    int maxPigments = 3,
+    Set<String>? restrictTo,
+  }) {
+    var pigments = _engine.allPigments;
+    if (restrictTo != null) {
+      pigments = pigments.where((p) => restrictTo.contains(p.id)).toList();
+    }
     if (pigments.isEmpty) return null;
 
     // Rank pigments by single-pigment closeness to the target.
