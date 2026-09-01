@@ -308,10 +308,11 @@ final mixSessionProvider =
       ref.listen(quantityUnitProvider, (_, next) {
         notifier.setQuantityUnit(next);
       });
-      notifier.setExtraPigments(ref.read(usableCustomPigmentsProvider));
-      ref.listen<List<PigmentModel>>(usableCustomPigmentsProvider, (_, next) {
-        notifier.setExtraPigments(next);
-      });
+      ref.listen<List<PigmentModel>>(
+        usableCustomPigmentsProvider,
+        (_, next) => notifier.setExtraPigments(next),
+        fireImmediately: true,
+      );
       return notifier;
     },
     loading: () => MixSessionNotifier._placeholder(),
