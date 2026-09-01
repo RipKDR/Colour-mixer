@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:chromastudio/engine/catalog.dart';
@@ -89,5 +90,46 @@ void main() {
 
     final second = await container.read(engineProvider.future);
     expect(second.getPigment('custom_keep'), isNotNull);
+  });
+
+  test('engineProvider logs a stack trace when custom pigments fail to load',
+      () async {
+    final previousPrint = debugPrint;
+    final logs = <String>[];
+    debugPrint = (message, {wrapWidth}) {
+      logs.add(message ?? '');
+    };
+    addTearDown(() => debugPrint = previousPrint);
+
+    final backend = await testEngineBackend();
+    var extrasShouldFail = false;
+    final extraPigment = testPigment(
+      'custom_keep',
+      'Keep me',
+      List.filled(41, 0.4),
+    );
+    final container = ProviderContainer(
+      overrides: [
+        engineBackendProvider.overrideWith((ref) async => backend),
+        mediumLibraryProvider.overrideWith((ref) async => MediumLibrary({})),
+        customPigmentModelsProvider.overrideWith((ref) async {
+          ref.watch(customPigmentsRefreshProvider);
+          if (extrasShouldFail) {
+            throw StateError('custom pigment store unavailable');
+          }
+          return [extraPigment];
+        }),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    await container.read(engineProvider.future);
+    extrasShouldFail = true;
+    container.read(customPigmentsRefreshProvider.notifier).state++;
+    await container.read(engineProvider.future);
+
+    final logged = logs.join('\n');
+    expect(logged, contains('custom pigment store unavailable'));
+    expect(logged, contains('#0'));
   });
 }

@@ -4,16 +4,20 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:chromastudio/features/pigments/custom_pigments_provider.dart';
 import 'package:chromastudio/features/recipes/database.dart';
 
-CustomPigment _row(List<double> reflectance, {String id = 'custom_test'}) {
+CustomPigment _rowJson(String reflectanceJson, {String id = 'custom_test'}) {
   return CustomPigment(
     id: id,
     name: 'Studio Grey',
-    reflectanceJson: jsonEncode(reflectance),
+    reflectanceJson: reflectanceJson,
     opacity: 0.8,
     tintingStrength: 1.1,
     binder: 'oil',
     createdAt: DateTime.utc(2026, 9, 1),
   );
+}
+
+CustomPigment _row(List<double> reflectance, {String id = 'custom_test'}) {
+  return _rowJson(jsonEncode(reflectance), id: id);
 }
 
 void main() {
@@ -68,11 +72,25 @@ void main() {
     );
   });
 
+  test('customPigmentToModel rejects reflectanceJson that is not a number array', () {
+    expect(
+      () => customPigmentToModel(_rowJson('{}')),
+      throwsA(isA<FormatException>()),
+    );
+    expect(
+      () => customPigmentToModel(
+        _rowJson(jsonEncode(List<Object>.filled(41, '0.5'))),
+      ),
+      throwsA(isA<FormatException>()),
+    );
+  });
+
   test('customPigmentModelsFromRows skips invalid rows and keeps valid ones', () {
     final good = _row(List.filled(41, 0.5), id: 'good');
-    final bad = _row(List.filled(40, 0.5), id: 'bad');
+    final badLength = _row(List.filled(40, 0.5), id: 'bad');
+    final badShape = _rowJson('{}', id: 'not-array');
 
-    final models = customPigmentModelsFromRows([good, bad]);
+    final models = customPigmentModelsFromRows([good, badLength, badShape]);
 
     expect(models, hasLength(1));
     expect(models.single.id, 'good');

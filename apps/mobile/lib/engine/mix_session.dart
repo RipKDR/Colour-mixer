@@ -101,8 +101,8 @@ final engineProvider = FutureProvider<ChromaEngine>((ref) async {
   try {
     extra = await ref.watch(customPigmentModelsProvider.future);
     ref.read(_lastGoodCustomPigmentsProvider.notifier).state = extra;
-  } catch (e) {
-    debugPrint('ChromaStudio: custom pigments failed to load: $e');
+  } catch (e, st) {
+    debugPrint('ChromaStudio: custom pigments failed to load: $e\n$st');
     extra = ref.read(_lastGoodCustomPigmentsProvider);
   }
   return ChromaEngine({
@@ -317,8 +317,10 @@ final mixSessionProvider =
           next.when(
             data: notifier.setCustomPigments,
             loading: () {},
-            error: (e, _) {
-              debugPrint('ChromaStudio: custom pigments failed to load: $e');
+            error: (e, st) {
+              debugPrint(
+                'ChromaStudio: custom pigments failed to load: $e\n$st',
+              );
             },
           );
         },
