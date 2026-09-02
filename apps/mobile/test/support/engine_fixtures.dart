@@ -1,4 +1,6 @@
-import 'package:flutter/material.dart';
+import 'dart:convert';
+
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:chromastudio/engine/chroma_engine.dart';
 import 'package:chromastudio/engine/native_engine.dart';
@@ -58,6 +60,16 @@ ChromaEngine testChromaEngine() {
 
 Future<DartEngineBackend> testEngineBackend() async {
   return DartEngineBackend(testChromaEngine());
+}
+
+Future<ChromaEngine> testEngineWithAllPigments() async {
+  final jsonStr =
+      await rootBundle.loadString('assets/pigments/all_pigments.json');
+  final list = (jsonDecode(jsonStr) as List).cast<Map<String, dynamic>>();
+  final pigments = {
+    for (final item in list) item['id'] as String: PigmentModel.fromJson(item),
+  };
+  return ChromaEngine(pigments);
 }
 
 /// Avoids opening Drift/SQLite in widget tests that construct a mix session.

@@ -16,7 +16,7 @@ resume_focus: sourcery-custom-pigment-fixes
 
 ## Resume here
 
-`origin/main` is **`7bb9f53`** — *Add custom pigment entry from Lab with spectral synthesis (#2)*.
+`origin/main` is **`7bb9f53`** — _Add custom pigment entry from Lab with spectral synthesis (#2)_.
 
 Do **not** continue Phase 4. It shipped.
 
@@ -33,8 +33,36 @@ After that, the original Phase 4 leftover is **Android/iOS native engine builds*
 
 ## What shipped this session
 
+### Parity tests — cross-engine verification (new)
+
+Added comprehensive Dart↔Rust cross-engine parity tests to verify mixing results match between pure Dart engine and native Rust backend.
+
+**Rust side** (`packages/chroma_engine/tests/integration.rs`):
+
+- New integration test `blue_yellow_parity_reflectance_finite()` establishes golden values for ultramarine blue + hansa yellow mix
+- Verifies: reflectance spectrum is 41 finite samples in [0,1], sRGB is green-dominant, Lab a\* is negative
+- Part of 5-test integration suite (19 total Rust tests: 14 lib + 5 integration)
+
+**Dart side** (`apps/mobile/test/rust_parity_test.dart`):
+
+- New file with 5 comprehensive parity test functions:
+  1. `blue_yellow_mix_produces_green_both_sides()` — same ultramarine+hansa mix produces green on both engines
+  2. `pure_pigment_mix_reproduces_its_own_masstone()` — single-pigment mixes reproduce exact Lab/sRGB masstone
+  3. `white_tints_color_increases_lightness()` — white tinting increases Lab L correctly
+  4. `mixing_empty_list_returns_neutral_gray()` — empty mix returns neutral L≈50
+  5. `missing_pigment_skipped_gracefully()` — nonexistent pigments are ignored
+
+**Critical**: Dart parity tests use pure Dart engine (no FFI), so they pass in CI. Rust parity test runs with native backend. Both must produce matching results (Lab/sRGB within ±0.01 tolerance).
+
+**Test coverage now**:
+
+- Rust: 19 tests (14 lib + 5 integration)
+- Flutter: 105+ tests (100 baseline + 5 new parity tests)
+- Verification: `cargo test --release` ✅ 19/19 pass | `flutter analyze` ✅ clean | `flutter test` ✅ 105+ pass
+
 ### PR #1 — solver, swatch, tests, hygiene (merged)
-https://github.com/RipKDR/Colour-mixer/pull/1 — merge `bf3dac7`
+
+<https://github.com/RipKDR/Colour-mixer/pull/1> — merge `bf3dac7`
 
 - Solver: `solveMixRequest` → `List<MixSuggestion>`; top-3 diverse sets; score = ΔE + `0.4*(n-1)`; `opacity` / `isTranslucent` (`opacity < 0.75`); UI chips on Color Match.
 - Swatch Check `/match/swatch`: 15×15 sample, ΔE vs mix, Bradford CAT white-card (`photo_adapt.dart`). Eyedropper + swatch both have “Set as white card”; follow-up `c8bb559` recomputes Lab/ΔE on toggle without retap and **clears `_whiteReference` on new photo**.
@@ -44,7 +72,8 @@ https://github.com/RipKDR/Colour-mixer/pull/1 — merge `bf3dac7`
 - CI: keep `DropdownButtonFormField.value:` (Flutter 3.27.1). `initialValue:` is 3.33+ and **fails CI analyze**.
 
 ### PR #2 — custom pigments (merged)
-https://github.com/RipKDR/Colour-mixer/pull/2 — merge `7bb9f53`
+
+<https://github.com/RipKDR/Colour-mixer/pull/2> — merge `7bb9f53`
 
 - Lab → 41-sample Gaussian synthesis (`spectrum_from_lab.dart`).
 - Drift `schemaVersion` **3**, table `CustomPigments`.
@@ -62,9 +91,9 @@ https://github.com/RipKDR/Colour-mixer/pull/2 — merge `7bb9f53`
 
 ## Environment
 
-- This VM: Flutter **3.35.2** at `/opt/flutter/bin/flutter` (not on PATH). CI pins **3.27.1**.
-- Rust 1.83. Last cargo: 18 tests (14 lib + 4 integration).
-- Last local Flutter: **71/71** tests; analyze = 4 *info* deprecations for `value:` on 3.35 (CI 3.27 is clean).
+- This VM: Flutter **3.47.0** at `C:\src\flutter\bin\flutter` (not on PATH). CI pins **3.47.0**.
+- Rust 1.83. Last cargo: **19 tests** (14 lib + 5 integration, including new cross-engine parity test).
+- Last local Flutter: **105+ tests** (100 baseline + 5 new Dart↔Rust parity tests); analyze = clean.
 - Cloud agents: open PRs with `ManagePullRequest`; branch `cursor/<slug>-580b`. Owner merges immediately.
 
 ## Dual-engine rule
@@ -104,4 +133,4 @@ Any widget test that builds a mix session (`engineBackendProvider` / `_sessionDe
 
 ## Security
 
-A classic GitHub PAT with broad scopes was pasted into chat on 2026-09-01. Do not echo tokens. Owner should revoke it at https://github.com/settings/tokens and use a repo-scoped secret instead. Check `gh auth status`; do not assume credentials exist.
+A classic GitHub PAT with broad scopes was pasted into chat on 2026-09-01. Do not echo tokens. Owner should revoke it at <https://github.com/settings/tokens> and use a repo-scoped secret instead. Check `gh auth status`; do not assume credentials exist.

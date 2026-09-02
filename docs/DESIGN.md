@@ -120,6 +120,6 @@ machine-readable `chromastudio-recipe-v1` JSON (export + import via
 `.github/workflows/ci.yml`, two jobs on push to `main`/`cursor/**` and PRs:
 
 - **rust**: `cargo test` + `cargo build --release` in `packages/chroma_engine`.
-- **flutter**: Flutter 3.27.1, `pub get`, `build_runner build`, `analyze`, `test`.
+- **flutter**: Flutter 3.47.0, `pub get`, `build_runner build`, `analyze`, `test`.
   Note: this job has no native `.so`, so tests run on the Dart fallback engine —
   by design; never write a test requiring the native backend.
