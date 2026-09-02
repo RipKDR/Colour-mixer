@@ -13,14 +13,20 @@ class MixScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final mode = ref.watch(mixSessionProvider).mode;
     final notifier = ref.read(mixSessionProvider.notifier);
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Mix'),
-        // Five icons plus the segmented button overflow a phone-width app
-        // bar, so the tool shortcuts live in a single menu.
-        actions: [
-          SegmentedButton<MixMode>(
+    final compactActions = MediaQuery.sizeOf(context).width < 480;
+    final modeSelector = compactActions
+        ? PopupMenuButton<MixMode>(
+            icon: Icon(
+              mode == MixMode.palette ? Icons.palette : Icons.tune,
+            ),
+            tooltip: 'Mix mode',
+            onSelected: notifier.setMode,
+            itemBuilder: (_) => const [
+              PopupMenuItem(value: MixMode.palette, child: Text('Palette')),
+              PopupMenuItem(value: MixMode.precision, child: Text('Precision')),
+            ],
+          )
+        : SegmentedButton<MixMode>(
             segments: const [
               ButtonSegment(
                 value: MixMode.palette,
@@ -34,8 +40,17 @@ class MixScreen extends ConsumerWidget {
               ),
             ],
             selected: {mode},
+            showSelectedIcon: false,
             onSelectionChanged: (s) => notifier.setMode(s.first),
-          ),
+          );
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Mix'),
+        // Keep the full mode switcher on larger layouts; phone-width layouts
+        // use a compact mode menu so the app-bar actions always fit.
+        actions: [
+          modeSelector,
           PopupMenuButton<String>(
             icon: const Icon(Icons.handyman_outlined),
             tooltip: 'Tools',

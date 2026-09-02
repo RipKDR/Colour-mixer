@@ -57,7 +57,7 @@ Status as of 2026-09-01 (`main` @ `7bb9f53`, PRs #1 and #2 merged). ✅ done · 
   Drift stays authoritative; no community sharing / realtime / OAuth)
 - ✅ Android device build validated — `./tools/build_mobile.sh android` (cargo-ndk 4.1.2, NDK 27.1, arm64-v8a + armeabi-v7a + x86_64), release APK installed on Pixel 9 (API 35) emulator; logcat confirmed `ChromaStudio: native Rust engine loaded (full spectra)`
 - ⬜ iOS build validated (needs a Mac)
-- ⬜ Precision-mode layout overflow on small screens (RenderFlex overflow in `precision_mode.dart` `_MiniSwatch` Column — cosmetic, screen scrolls but swatch column clips)
+- ✅ Precision-mode responsive layout on phone-sized screens (compact mode menu, wrapping background controls, scrollable short swatch panel)
 
 ## Later / ideas (unscheduled)
 

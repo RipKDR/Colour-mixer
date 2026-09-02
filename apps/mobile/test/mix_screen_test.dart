@@ -59,5 +59,35 @@ void main() {
 
       expect(find.text('Palette'), findsOneWidget);
     });
+
+    testWidgets('precision mode does not overflow on phone-sized screens',
+        (tester) async {
+      // Pixel 9 emulator logical size (1080x1920 @ 2.625).
+      final originalPhysicalSize = tester.view.physicalSize;
+      final originalDevicePixelRatio = tester.view.devicePixelRatio;
+      tester.view
+        ..physicalSize = const Size(411, 731)
+        ..devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view
+          ..physicalSize = originalPhysicalSize
+          ..devicePixelRatio = originalDevicePixelRatio;
+      });
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            engineBackendProvider.overrideWith((ref) => Future.value(backend)),
+            emptyCustomPigmentsOverride(),
+          ],
+          child: const MaterialApp(home: MixScreen()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byTooltip('Mix mode'), findsOneWidget);
+      expect(find.byType(SegmentedButton<MixMode>), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
   });
 }

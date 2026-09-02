@@ -216,69 +216,94 @@ class _SwatchPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          Expanded(
-            child: Semantics(
-              label: lab != null
-                  ? 'Mixed colour L ${lab!.l.toStringAsFixed(1)}, '
-                      'a ${lab!.a.toStringAsFixed(1)}, '
-                      'b ${lab!.b.toStringAsFixed(1)}'
-                  : 'Mixed colour swatch',
-              child: Container(
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: _bgColor,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppTheme.ochre.withValues(alpha: 0.5)),
-                ),
-                child: Center(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      if (showDrying && wetColor != null) ...[
-                        _MiniSwatch(color: wetColor!, label: 'Wet'),
-                        const SizedBox(width: 16),
-                        const Icon(Icons.arrow_forward, size: 16),
-                        const SizedBox(width: 16),
-                      ],
-                      _MiniSwatch(
-                        color: color,
-                        label: showDrying ? 'Dry' : (showUndertone ? 'Undertone' : 'Mix'),
-                        large: !showDrying,
-                      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final preview = Semantics(
+            label: lab != null
+                ? 'Mixed colour L ${lab!.l.toStringAsFixed(1)}, '
+                    'a ${lab!.a.toStringAsFixed(1)}, '
+                    'b ${lab!.b.toStringAsFixed(1)}'
+                : 'Mixed colour swatch',
+            child: Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: _bgColor,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppTheme.ochre.withValues(alpha: 0.5)),
+              ),
+              child: Center(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if (showDrying && wetColor != null) ...[
+                      _MiniSwatch(color: wetColor!, label: 'Wet'),
+                      const SizedBox(width: 16),
+                      const Icon(Icons.arrow_forward, size: 16),
+                      const SizedBox(width: 16),
                     ],
-                  ),
+                    _MiniSwatch(
+                      color: color,
+                      label: showDrying
+                          ? 'Dry'
+                          : (showUndertone ? 'Undertone' : 'Mix'),
+                      large: !showDrying,
+                    ),
+                  ],
                 ),
               ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: SwatchBackground.values.map((bg) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: ChoiceChip(
-                  label: Text(bg.name[0].toUpperCase() + bg.name.substring(1)),
-                  selected: background == bg,
-                  onSelected: (_) => onBackgroundChanged(bg),
+          );
+          final controls = Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Wrap(
+                alignment: WrapAlignment.center,
+                spacing: 8,
+                runSpacing: 4,
+                children: SwatchBackground.values.map((bg) {
+                  return ChoiceChip(
+                    label: Text(
+                      bg.name[0].toUpperCase() + bg.name.substring(1),
+                    ),
+                    selected: background == bg,
+                    onSelected: (_) => onBackgroundChanged(bg),
+                  );
+                }).toList(),
+              ),
+              TextButton.icon(
+                onPressed: onToggleUndertone,
+                icon: Icon(showUndertone ? Icons.layers : Icons.circle),
+                label: Text(showUndertone ? 'Undertone' : 'Mass tone'),
+              ),
+              if (onToggleDrying != null)
+                TextButton.icon(
+                  onPressed: onToggleDrying,
+                  icon: Icon(showDrying ? Icons.wb_sunny : Icons.water_drop),
+                  label: Text(showDrying ? 'Drying preview' : 'Wet only'),
                 ),
-              );
-            }).toList(),
-          ),
-          TextButton.icon(
-            onPressed: onToggleUndertone,
-            icon: Icon(showUndertone ? Icons.layers : Icons.circle),
-            label: Text(showUndertone ? 'Undertone' : 'Mass tone'),
-          ),
-          if (onToggleDrying != null)
-            TextButton.icon(
-              onPressed: onToggleDrying,
-              icon: Icon(showDrying ? Icons.wb_sunny : Icons.water_drop),
-              label: Text(showDrying ? 'Drying preview' : 'Wet only'),
-            ),
-        ],
+            ],
+          );
+
+          if (constraints.maxHeight < 300) {
+            return SingleChildScrollView(
+              child: Column(
+                children: [
+                  SizedBox(height: 120, child: preview),
+                  const SizedBox(height: 8),
+                  controls,
+                ],
+              ),
+            );
+          }
+
+          return Column(
+            children: [
+              Expanded(child: preview),
+              const SizedBox(height: 8),
+              controls,
+            ],
+          );
+        },
       ),
     );
   }
@@ -298,27 +323,31 @@ class _MiniSwatch extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final size = large ? 120.0 : 64.0;
-    return Column(
-      children: [
-        AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          width: size,
-          height: size,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: color.withValues(alpha: 0.4),
-                blurRadius: 12,
-                spreadRadius: 1,
-              ),
-            ],
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            width: size,
+            height: size,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: color.withValues(alpha: 0.4),
+                  blurRadius: 12,
+                  spreadRadius: 1,
+                ),
+              ],
+            ),
           ),
-        ),
-        const SizedBox(height: 4),
-        Text(label, style: Theme.of(context).textTheme.labelSmall),
-      ],
+          const SizedBox(height: 4),
+          Text(label, style: Theme.of(context).textTheme.labelSmall),
+        ],
+      ),
     );
   }
 }
