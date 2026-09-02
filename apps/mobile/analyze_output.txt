@@ -1,9 +1,0 @@
-Analyzing mobile...                                             
-
-   info - 'green' is deprecated and shouldn't be used. Use (*.g * 255.0).round().clamp(0, 255). Try replacing the use of the deprecated member with the replacement - test\rust_parity_test.dart:28:27 - deprecated_member_use
-   info - 'red' is deprecated and shouldn't be used. Use (*.r * 255.0).round().clamp(0, 255). Try replacing the use of the deprecated member with the replacement - test\rust_parity_test.dart:28:59 - deprecated_member_use
-   info - 'green' is deprecated and shouldn't be used. Use (*.g * 255.0).round().clamp(0, 255). Try replacing the use of the deprecated member with the replacement - test\rust_parity_test.dart:29:27 - deprecated_member_use
-   info - 'blue' is deprecated and shouldn't be used. Use (*.b * 255.0).round().clamp(0, 255). Try replacing the use of the deprecated member with the replacement - test\rust_parity_test.dart:29:59 - deprecated_member_use
-   info - The import of 'package:flutter/material.dart' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/services.dart'. Try removing the import directive - test\support\engine_fixtures.dart:3:8 - unnecessary_import
-
-5 issues found. (ran in 12.1s)
