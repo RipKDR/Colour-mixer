@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/services.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:chromastudio/engine/chroma_engine.dart';
 import 'package:chromastudio/engine/native_engine.dart';
@@ -63,6 +64,7 @@ Future<DartEngineBackend> testEngineBackend() async {
 }
 
 Future<ChromaEngine> testEngineWithAllPigments() async {
+  TestWidgetsFlutterBinding.ensureInitialized();
   final jsonStr =
       await rootBundle.loadString('assets/pigments/all_pigments.json');
   final list = (jsonDecode(jsonStr) as List).cast<Map<String, dynamic>>();
