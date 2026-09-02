@@ -356,7 +356,7 @@ class _MediumSection extends ConsumerWidget {
           children: [
             Text('Medium', style: Theme.of(context).textTheme.titleSmall),
             DropdownButtonFormField<String?>(
-              value: mediumId,
+              initialValue: mediumId,
               decoration: const InputDecoration(
                 hintText: 'No medium',
                 isDense: true,
@@ -382,7 +382,7 @@ class _MediumSection extends ConsumerWidget {
               children: [
                 Expanded(
                   child: DropdownButtonFormField<String>(
-                    value: binder,
+                    initialValue: binder,
                     decoration: const InputDecoration(
                       labelText: 'Binder',
                       isDense: true,
@@ -399,7 +399,7 @@ class _MediumSection extends ConsumerWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: DropdownButtonFormField<DryingTime>(
-                    value: dryingTime,
+                    initialValue: dryingTime,
                     decoration: const InputDecoration(
                       labelText: 'Dry time',
                       isDense: true,

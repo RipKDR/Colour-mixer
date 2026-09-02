@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// Loads the palette-knife spectral blend fragment shader (optional).
 final mixShaderProvider = FutureProvider<ui.FragmentProgram?>((ref) async {
   try {
-    return ui.FragmentProgram.fromAsset('assets/shaders/mix_blend.frag');
+    return await ui.FragmentProgram.fromAsset('assets/shaders/mix_blend.frag');
   } catch (_) {
     return null;
   }

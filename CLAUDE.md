@@ -61,6 +61,8 @@ cd apps/mobile && /agent/flutter/bin/dart run build_runner build --delete-confli
    both or their results diverge. Tests cover the Dart side; `cargo test` covers Rust.
 3. **CI has no native library for the Flutter job** — Flutter tests must pass with the
    Dart fallback engine. Never write a test that requires the native backend.
+   CI pins **Flutter 3.47.0** (matches local dev; `DropdownButtonFormField.initialValue`
+   requires 3.33+, so CI cannot stay on 3.27.x).
 4. **`fromJson`/DB codegen:** `database.g.dart` is committed. Regenerate with
    build_runner after schema edits and bump `schemaVersion` + add a migration in
    `database.dart` (currently version 4).

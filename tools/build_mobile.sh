@@ -16,12 +16,24 @@ build_android() {
     echo "Install cargo-ndk: cargo install cargo-ndk"
     exit 1
   fi
+  if [ -z "${ANDROID_NDK_HOME:-}" ] && [ -z "${ANDROID_NDK_ROOT:-}" ]; then
+    echo "Set ANDROID_NDK_HOME to your NDK directory (e.g. \$LOCALAPPDATA/Android/Sdk/ndk/<version>)"
+    exit 1
+  fi
   rustup target add aarch64-linux-android armv7-linux-androideabi x86_64-linux-android 2>/dev/null || true
-  for abi in arm64-v8a armeabi-v7a x86_64; do
-    echo "Building Android $abi..."
-    cargo ndk -t "$abi" -o "$PLUGIN/android/src/main/jniLibs" build --release \
-      --manifest-path "$ENGINE/Cargo.toml"
-  done
+  # cargo-ndk expects native-style paths and runs `cargo metadata` in the CWD,
+  # so build from inside the engine directory (works on Linux, macOS and Windows/MSYS).
+  local out="$PLUGIN/android/src/main/jniLibs"
+  case "$out" in
+    /[a-z]/*) out="$(cygpath -m "$out" 2>/dev/null || echo "$out")" ;;
+  esac
+  (
+    cd "$ENGINE"
+    for abi in arm64-v8a armeabi-v7a x86_64; do
+      echo "Building Android $abi..."
+      cargo ndk -t "$abi" -o "$out" build --release
+    done
+  )
   echo "Android libs in $PLUGIN/android/src/main/jniLibs"
 }
 
