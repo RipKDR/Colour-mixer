@@ -1,6 +1,6 @@
 # ChromaStudio Roadmap & Status
 
-Status as of 2026-09-01 (`main` @ `7bb9f53`, PRs #1 and #2 merged). ✅ done · 🔶 partial · ⬜ not started
+Status as of 2026-09-02 (`main` @ `79da855`, PRs #1–#3 and #5–#8 merged; #4 closed unmerged, superseded). ✅ done · 🔶 partial · ⬜ not started
 
 ## Phase 1 — MVP ✅
 
