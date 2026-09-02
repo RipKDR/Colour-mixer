@@ -83,9 +83,8 @@ verify with `gh auth status` / the tokens page directly.
   constraints).
 - `docs/DESIGN.md` — architecture.
 - `docs/FEATURES.md` — feature → file map.
-- `docs/ROADMAP.md` — phase status; still dated 2026-09-01 in its header
-  but content is current through the Android build/layout work — bump the
-  header date whenever you touch it next.
+- `docs/ROADMAP.md` — phase status; header bumped to 2026-09-02 in this
+  same cleanup pass.
 - `docs/ENGINE.md` — KM / colorimetry notes.
 
 ## Environment
