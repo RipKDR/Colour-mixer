@@ -55,7 +55,7 @@ Status as of 2026-09-01 (`main` @ `7bb9f53`, PRs #1 and #2 merged). ✅ done · 
   `reflectanceJson` (`mix_session.dart`, `custom_pigments_provider.dart`)
 - 🔶 Cloud recipe sync (email/password, explicit Push/Pull via `package:appwrite`;
   Drift stays authoritative; no community sharing / realtime / OAuth)
-- ✅ Android device build validated — `./tools/build_mobile.sh android` (cargo-ndk 4.1.2, NDK 27.1, arm64-v8a + armeabi-v7a + x86_64), release APK installed on Pixel 9 (API 35) emulator; logcat confirmed `ChromaStudio: native Rust engine loaded (full spectra)`
+- ✅ Android device build validated — `./tools/build_mobile.sh android` (cargo-ndk 4.1.2, NDK 28.2.13676358, arm64-v8a + armeabi-v7a + x86_64), release APK installed on Pixel 9 (API 35) emulator; logcat confirmed `ChromaStudio: native Rust engine loaded (full spectra)`
 - ⬜ iOS build validated (needs a Mac)
 - ✅ Precision-mode responsive layout on phone-sized screens (compact mode menu, wrapping background controls, scrollable short swatch panel)
 

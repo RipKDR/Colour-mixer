@@ -103,7 +103,9 @@ before accepting a library; otherwise the app falls back to the Dart engine.
   (machine-local path — adjust if the repo moves), then bundled locations.
 - **Android:** `libchroma_engine.so` from jniLibs
   (`packages/chroma_engine_ffi/android/src/main/jniLibs/<abi>/`); populate via
-  `./tools/build_mobile.sh android` (requires `cargo-ndk` + NDK). **Untested.**
+  `./tools/build_mobile.sh android` (cargo-ndk 4.1.2 + NDK 28.2.13676358).
+  Validated on the Pixel 9 (API 35) emulator; the APK log confirms the native
+  Rust engine loads with full spectra.
 - **iOS:** static lib `Frameworks/libchroma_engine.a` vended by the podspec;
   build on a Mac via `./tools/build_mobile.sh ios`. **Untested.**
 
@@ -117,7 +119,7 @@ before accepting a library; otherwise the app falls back to the Dart engine.
 5. Mirror behaviour in the Dart engine if applicable; add Dart tests.
 6. Run the full Flutter suite — it must pass on both backends.
 
-## Test inventory (at handover: 21 Flutter + 10 Rust, all green)
+## Test inventory (verified 2026-09-02: 100 Flutter + 18 Rust, all green)
 
 | File | Covers |
 |------|--------|

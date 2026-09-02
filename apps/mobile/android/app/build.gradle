@@ -10,7 +10,7 @@ android {
     compileSdk = flutter.compileSdkVersion
     // Match the NDK used to build the prebuilt Rust libraries in
     // packages/chroma_engine_ffi/android/src/main/jniLibs (tools/build_mobile.sh).
-    ndkVersion = "27.1.12297006"
+    ndkVersion = "28.2.13676358"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
