@@ -1946,10 +1946,9 @@ final class $$MixRecipesTableReferences
   $$MixRecipesTableReferences(super.$_db, super.$_table, super.$_typedResult);
 
   static MultiTypedResultKey<$RecipeTagsTable, List<RecipeTag>>
-      _recipeTagsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
-          db.recipeTags,
-          aliasName:
-              $_aliasNameGenerator(db.mixRecipes.id, db.recipeTags.recipeId));
+      _recipeTagsRefsTable(_$AppDatabase db) =>
+          MultiTypedResultKey.fromTable(db.recipeTags,
+              aliasName: 'mix_recipes__id__recipe_tags__recipe_id');
 
   $$RecipeTagsTableProcessedTableManager get recipeTagsRefs {
     final manager = $$RecipeTagsTableTableManager($_db, $_db.recipeTags)
@@ -2267,8 +2266,7 @@ final class $$RecipeTagsTableReferences
   $$RecipeTagsTableReferences(super.$_db, super.$_table, super.$_typedResult);
 
   static $MixRecipesTable _recipeIdTable(_$AppDatabase db) =>
-      db.mixRecipes.createAlias(
-          $_aliasNameGenerator(db.recipeTags.recipeId, db.mixRecipes.id));
+      db.mixRecipes.createAlias('recipe_tags__recipe_id__mix_recipes__id');
 
   $$MixRecipesTableProcessedTableManager get recipeId {
     final $_column = $_itemColumn<int>('recipe_id')!;
